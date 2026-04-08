@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: gop_appdb
+      POSTGRES_USER: prisma
+      POSTGRES_PASSWORD: prisma
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prisma -d gop_appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  hapifhir:
+    image: hapifhir/hapi-fhir-jpaserver-starter:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      HAPI_FHIR_VERSION: 7.4.0
+      JPA_SERVER_PORT: 8080
+      JPA_DATABASE_DRIVER: postgresql
+      JPA_DATABASE_URL: jdbc:postgresql://postgres:5432/hapi_fhir_db
+      JPA_DATABASE_USER: hapi
+      JPA_DATABASE_PASSWORD: hapi
+      JPA_FLYWAY_ENABLED: 'true'
+      JPA_MDMSERVER_URL: http://localhost:8080/fhir
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - hapifhir_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/fhir/metadata"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      hapifhir:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+
+volumes:
+  postgres_data:
+  hapifhir_data:
+
+networks:
+  default:
+    driver: bridge
+

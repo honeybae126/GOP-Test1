@@ -1,0 +1,196 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// This is your Prisma schema file for GOP Automation app metadata (non-canonical).
+// FHIR data lives in HAPI FHIR server.
+
+// Define your models below.
+
+enum NotificationEvent {
+  REQUEST_CREATED
+  REQUEST_ASSIGNED
+  REQUEST_REASSIGNED
+  REQUEST_VERIFIED
+  REQUEST_CORRECTION_REQUESTED
+  REQUEST_SUBMITTED
+  REQUEST_APPROVED
+  REQUEST_REJECTED
+  REQUEST_EXPIRED
+  PDF_DOWNLOADED
+}
+
+enum AuditActorRole {
+  ADMIN
+  STAFF
+  DOCTOR
+  SYSTEM
+}
+
+enum AuditAction {
+  REQUEST_CREATED
+  REQUEST_UPDATED
+  REQUEST_ASSIGNED
+  REQUEST_REASSIGNED
+  REQUEST_SUBMITTED_FOR_VERIFICATION
+  REQUEST_VERIFIED
+  REQUEST_CORRECTION_REQUESTED
+  REQUEST_SUBMITTED_TO_INSURER
+  REQUEST_APPROVED
+  REQUEST_REJECTED
+  REQUEST_EXPIRED
+  PDF_GENERATED
+  PDF_DOWNLOADED
+  NOTES_CREATED
+  NOTES_EDITED
+  USER_CREATED
+  USER_DEACTIVATED
+  USER_ROLE_CHANGED
+}
+
+model Notification {
+  id            String      @id @default(cuid())
+  recipientId   String
+  recipientRole Role
+  eventType     NotificationEvent
+  requestId     String?
+  readAt        DateTime?
+  createdAt     DateTime         @default(now())
+  metadata      Json             @default("{}")
+
+  recipient     UserMetadata     @relation(fields: [recipientId], references: [id])
+  gopRequest    GOPRequest?      @relation(fields: [requestId], references: [id])
+
+  @@unique([id])
+  @@index([recipientId, readAt])
+  @@index([recipientId, createdAt(sort: Desc)])
+  @@index([requestId])
+  @@map("notifications")
+}
+
+model AuditEntry {
+  id           String      @id @default(cuid())
+  requestId    String?
+  actorId      String?
+  actorRole    AuditActorRole
+  action       AuditAction
+  beforeState  Json?
+  afterState   Json?
+  ipAddress    String?
+  sessionId    String?
+  metadata     Json?         @default("{}")
+  createdAt    DateTime      @default(now())
+
+  actor        UserMetadata? @relation(fields: [actorId], references: [id])
+  gopRequest   GOPRequest?   @relation(fields: [requestId], references: [id])
+
+  @@index([requestId, createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_entries")
+}
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  adminId   String
+  key       String
+  value     Json
+  updatedAt DateTime @default(now()) @updatedAt
+
+  admin     UserMetadata @relation(fields: [adminId], references: [id])
+
+  @@unique([key])
+  @@map("system_config")
+}
+
+model GOPRequest {
+  id               String    @id @default(cuid())
+  status           String    @default("DRAFT")
+  patientId        String
+  insurerId        String
+  assignedDoctorId String?
+  formData         Json?
+  submittedAt      DateTime?
+  expiresAt        DateTime?
+  approvedAt       DateTime?
+  rejectedAt       DateTime?
+  rejectedReason   String?
+  expiredAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  insurer          InsurerConfig     @relation(fields: [insurerId], references: [id])
+  notifications    Notification[]
+  auditEntries     AuditEntry[]
+
+  @@map("gop_requests")
+}
+
+
+generator client {
+  provider = "prisma-client" 
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model UserMetadata {
+  id            String   @id @default(cuid())
+  entraObjectId String   @unique
+  displayName   String
+  role          Role     @default(INSURANCE_STAFF)
+  preferences   Json?    
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  notifications Notification[]
+  auditEntries  AuditEntry[]
+  systemConfigs SystemConfig[]
+
+  @@map("user_metadata")
+}
+
+model InsurerConfig {
+  id                 String     @id @default(cuid())
+  name               String  @unique
+  contactEmail       String?
+  emailTemplate      String?
+  questionnaireFhirId String? // References FHIR Questionnaire ID
+  coPayRuleSummary   String? // Human-readable from ANZER
+  createdAt          DateTime @default(now())
+
+  gopRequests GOPRequest[]
+
+  @@map("insurer_config")
+}
+
+model NotificationRule {
+  id        String @id @default(cuid())
+  userId    String // Entra object ID
+  eventType String // e.g. GOP_APPROVED, OVERDUE
+  channel   String // email, in-app
+  enabled   Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventType, channel])
+  @@map("notification_rule")
+}
+
+model FeatureFlag {
+  id      String @id @default(cuid())
+  key     String @unique
+  enabled Boolean @default(false)
+  config  Json?
+
+  @@map("feature_flag")
+}
+
+enum Role {
+  INSURANCE_STAFF
+  DOCTOR
+  BILLING_STAFF
+  ADMIN
+}
+

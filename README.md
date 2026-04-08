@@ -54,3 +54,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - All data is mock/in-memory. No database setup needed for Phase 1.
 - State resets on server restart (Zustand is client-side only).
 - PDF generation uses the browser's print dialog (`/print/gop/[id]`).
+

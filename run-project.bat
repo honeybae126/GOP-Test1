@@ -1,0 +1,9 @@
+@echo off
+cd /d "c:\Users\Than Soputhrarith\Desktop\test1\gop-automation"
+echo Cleaning node_modules...
+if exist node_modules rmdir /s /q node_modules
+echo Installing dependencies...
+npm install
+echo Starting development server...
+npm run dev
+pause

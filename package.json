@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "sonner": "^2.0.7"
+  },
+  "devDependencies": {
+    "@prisma/client": "^7.6.0",
+    "prisma": "^7.6.0"
+  }
+}

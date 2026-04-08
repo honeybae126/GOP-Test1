@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp \"c:/Users/Than Soputhrarith/Desktop/test1/gop-automation/src/app/\\(app\\)/gop/[id]/print/page.tsx\" \"c:/Users/Than Soputhrarith/Desktop/test1/gop-automation/src/app/print/gop/[id]/page.tsx\")",
+      "Bash(rm -rf \"c:/Users/Than Soputhrarith/Desktop/test1/gop-automation/src/app/\\(app\\)/gop/[id]/print\")"
+    ]
+  }
+}

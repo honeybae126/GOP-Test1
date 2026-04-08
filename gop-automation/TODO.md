@@ -1,15 +1,16 @@
-# GOP Automation Project Fix Plan Progress
+# GOP Automation Vercel Deployment Fix - TODO
 
-## Steps to complete:
-- [x] 1. Create TODO.md with plan steps
-- [x] 2. Stop current dev server (Ctrl+C)
-- [x] 3. Install sonner: cd gop-automation && npm install sonner --legacy-peer-deps
-- [x] 4. Create src/components/ui/toaster.tsx
-- [x] 5. Fix src/lib/auth.ts for Auth.js v5 syntax (minor syntax clean)
-- [x] 6. Restart dev server: npm run dev
-- [x] 7. Test app at http://localhost:3000, signin with mock creds (staff@intercare.com/gop123 etc.)
-- [x] 8. Run npx prisma generate if needed for client
-- [ ] 9. Run `cd gop-automation && npx prisma db push` or migrate to apply Notification/AuditEntry tables
-- [ ] 10. npx prisma generate
+## Approved Plan Steps:
 
+- [x] 1. Update next.config.ts: Remove `output: 'standalone'` (use Vercel default serverless).
+- [x] 2. Update package.json: Add `prisma generate &&` to build script.
+- [x] 3. Create vercel.json with identity rewrites.
+- [ ] 4. Run `cd gop-automation && npx prisma generate`.
+- [ ] 5. Commit/push changes to Git.
+- [ ] 6. Redeploy: `cd gop-automation && vercel --prod`.
+- [ ] 7. Test https://your-vercel-url.vercel.app/auth/signin (public).
+- [ ] 8. Check Vercel dashboard build logs for errors.
+
+
+**Next step: Update configs and create vercel.json**
 

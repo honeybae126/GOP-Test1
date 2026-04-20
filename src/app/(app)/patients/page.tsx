@@ -7,6 +7,7 @@ import { MOCK_PATIENTS, MOCK_COVERAGES } from '@/lib/mock-data'
 export default async function PatientsPage() {
   const session = await auth()
   if (session?.user?.role === 'DOCTOR') redirect('/gop')
+  if (session?.user?.role === 'FINANCE') redirect('/gop')
 
   return (
     <div>

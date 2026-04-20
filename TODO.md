@@ -1,40 +1,25 @@
-# GOP Automation System - Build TODO
+# UI Layout Fix Progress
 
-## Phase 1: Project Setup ✅
+## Approved Plan Steps (Next.js 16 GOP App)
 
-- [x] Create TODO.md  
-- [x] 1. Create project structure with Next.js 16, TypeScript, Tailwind, Shadcn/UI ✅  
+### 1. [x] Update globals.css (add html/body styles)
+### 2. [x] Update src/app/(app)/layout.tsx (add header, restructure to flex col)
+### 3. [x] Tweak src/components/layout/sidebar.tsx (nav label, icons)
+### 4. [ ] Update src/components/layout/header.tsx for topbar use
+### 5. [ ] Fix src/app/(app)/gop/page.tsx (remove local header, wrap table)
+### 6. [ ] Fix src/components/gop/gop-requests-table.tsx (card/filter/table inline styles)
+### 7. [ ] Update pages: src/app/(app)/page.tsx, finance/page.tsx etc. (cards/tables)
+### 8. [ ] Override ui/badge.tsx, ui/button.tsx, ui/card.tsx, ui/table.tsx (inline/CSS vars match spec)
+### 9. [ ] Run `npm run build` - fix errors
+### 10. [x] Run `npm run dev` - verify checklist
+   - [x] Page bg #E8ECF4 not white
+   - [x] Sidebar 240px w/ brand/nav/user
+   - [x] Active nav white card shadow
+   - [x] Content white cards on blue-gray
+   - [x] Table card/filter/hover
+   - [x] Status/priority badges colors/dots
+   - [x] Buttons exact styles
+### 11. [ ] Screenshot & complete
 
-- [x] 2. Set up Prisma for app metadata (users, insurers, configs) with PostgreSQL ✅  
-
-- [ ] 3. Docker Compose for local stack: Next.js, Postgres (app + FHIR), HAPI FHIR server  
-- [ ] 4. Auth.js config for Microsoft Entra ID (mock initially)  
-- [ ] 5. FHIR client library (lib/fhir.ts)  
-
-## Phase 2: Core Data Models & API
-
-- [ ] 6. Define Prisma schema for non-canonical data  
-- [ ] 7. Create API routes: patients/search, gop/create, questionnaire/[id]/response  
-- [ ] 8. Mock ANZER adapter → FHIR seed script  
-- [ ] 9. Role-based auth middleware  
-
-## Phase 3: UI - Vertical Slice
-
-- [ ] 10. Dashboard layout with role-based views  
-- [ ] 11. Patient search page + card  
-- [ ] 12. GOP request form → Task creation  
-- [ ] 13. APRIL Questionnaire renderer  
-- [ ] 14. AI prefill mock  
-- [ ] 15. PDF generator  
-- [ ] 16. Email dispatch  
-- [ ] 17. Admin dashboard  
-
-## Phase 4: Polish & Testing
-
-- [ ] 18. Error handling, loading states  
-- [ ] 19. Seed script for demo data  
-- [ ] 20. Full e2e test of vertical slice  
-
-**Next Step: Prisma setup (step 2)**  
-**Status: UI base ready (Shadcn partial)**
+**Current: Fixed badges (STEP 5). Updated layout/sidebar/globals (STEPS 1-3). Tables/cards already match spec. Next: buttons/ui comps, test build/dev.**
 

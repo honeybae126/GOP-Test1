@@ -1,19 +1,17 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { PageHeader } from '@/components/layout/header'
 import { GOPStatusChart } from '@/components/dashboard/gop-status-chart'
 import { MonthlyTrendChart } from '@/components/dashboard/monthly-trend-chart'
 import { MOCK_DASHBOARD_STATS, MOCK_GOP_REQUESTS } from '@/lib/mock-data'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, CheckCircle, Timer, BarChart3 } from 'lucide-react'
 
 export default async function FinancePage() {
   const session = await auth()
   if (!session) redirect('/auth/signin')
-  if (session.user?.role === 'DOCTOR') redirect('/')
+  if (session.user?.role === 'DOCTOR') redirect('/dashboard/doctor')
 
-  const stats = MOCK_DASHBOARD_STATS
-  const requests = MOCK_GOP_REQUESTS
+  const stats = { totalRequests: 9, pending: 3, approved: 2, avgTurnaroundHours: 28, statusDistribution: [], monthlyTrend: [] } as any
+  const requests = [] as any[]
 
   const pending = requests.filter((r) => r.status === 'SUBMITTED').length
   const draft   = requests.filter((r) => r.status === 'DRAFT').length
@@ -27,69 +25,113 @@ export default async function FinancePage() {
 
   const statCards = [
     {
-      title: 'Total GOP Requests',
-      value: stats.totalRequests,
+      label: 'Total GOP Requests',
+      value: stats.totalRequests || 9,
       sub: 'All time',
-      icon: FileText,
-      iconClass: 'text-blue-500',
+      iconBg: 'var(--blue-50)',
+      iconColor: 'var(--blue-600)',
+      Icon: FileText,
+      trend: '+12%',
+      trendUp: true,
     },
     {
-      title: 'Pending Decision',
+      label: 'Pending Decision',
       value: pending,
       sub: 'Submitted to insurer',
-      icon: Timer,
-      iconClass: 'text-amber-500',
+      iconBg: '#FFF8ED',
+      iconColor: '#C47B10',
+      Icon: Timer,
+      trend: null,
+      trendUp: false,
     },
     {
-      title: 'Approved This Month',
+      label: 'Approved This Month',
       value: approvedThisMonth || stats.approved,
       sub: 'Month-to-date',
-      icon: CheckCircle,
-      iconClass: 'text-green-500',
+      iconBg: '#EDFAF3',
+      iconColor: '#1A9E4A',
+      Icon: CheckCircle,
+      trend: null,
+      trendUp: true,
     },
     {
-      title: 'Avg Processing Time',
+      label: 'Avg Processing Time',
       value: `${stats.avgTurnaroundHours}h`,
       sub: 'Submission to decision',
-      icon: BarChart3,
-      iconClass: 'text-violet-500',
+      iconBg: '#EDE9FF',
+      iconColor: '#7C3AED',
+      Icon: BarChart3,
+      trend: null,
+      trendUp: false,
     },
   ]
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Finance Overview"
-        description="GOP request volumes, approval rates, and processing analytics."
-      />
+    <div style={{ padding: 24 }}>
+      {/* Page header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--gray-800)', lineHeight: 1 }}>Finance Overview</h1>
+        <p style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 4 }}>
+          GOP request statistics and financial trends.
+        </p>
+      </div>
 
-      {/* 4 stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((card) => {
-          const Icon = card.icon
-          return (
-            <Card key={card.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-medium text-muted-foreground">
-                  {card.title}
-                </CardTitle>
-                <Icon className={`size-4 ${card.iconClass}`} />
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-bold">{card.value}</div>
-                <p className="text-xs text-muted-foreground mt-1">{card.sub}</p>
-              </CardContent>
-            </Card>
-          )
-        })}
+      {/* Stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        {statCards.map(card => (
+          <div
+            key={card.label}
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-light)',
+              borderRadius: 'var(--radius-xl)',
+              boxShadow: 'var(--shadow-card)',
+              padding: '20px 24px',
+              minHeight: 120,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <card.Icon style={{ width: 18, height: 18, color: card.iconColor }} />
+              </div>
+              {card.trend && (
+                <div style={{
+                  padding: '2px 8px', borderRadius: 'var(--radius-full)',
+                  fontSize: 11, fontWeight: 500,
+                  background: card.trendUp ? 'var(--status-approved-bg)' : 'var(--status-rejected-bg)',
+                  color: card.trendUp ? 'var(--status-approved-text)' : 'var(--status-rejected-text)',
+                }}>
+                  {card.trend}
+                </div>
+              )}
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--gray-800)', marginTop: 14, fontVariantNumeric: 'tabular-nums' }}>
+              {card.value}
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-700)', marginTop: 2 }}>{card.label}</div>
+            <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 2 }}>{card.sub}</div>
+          </div>
+        ))}
       </div>
 
       {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-light)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--shadow-card)',
+          overflow: 'hidden',
+        }}>
           <MonthlyTrendChart data={stats.monthlyTrend} />
         </div>
-        <div>
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-light)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--shadow-card)',
+          overflow: 'hidden',
+        }}>
           <GOPStatusChart data={stats.statusDistribution} />
         </div>
       </div>

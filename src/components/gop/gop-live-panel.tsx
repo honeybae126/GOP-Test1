@@ -12,6 +12,8 @@ import {
   CheckCircle, AlertTriangle, Clock, Sparkles,
   FileText, ClipboardCheck, Send, CheckSquare, Loader2, ThumbsUp, ThumbsDown, Circle, TimerOff,
 } from 'lucide-react'
+import { SLAIndicator } from './sla-indicator'
+import { getDraftSubStatus, DRAFT_SUB_STATUS_STYLES } from '@/lib/gop-utils'
 import { toast } from 'sonner'
 import { useState } from 'react'
 import {
@@ -24,7 +26,12 @@ import { Label } from '@/components/ui/label'
 interface GOPLivePanelProps {
   gopId: string
   isDoctor: boolean
+  isInsuranceStaff: boolean
+  isITAdmin: boolean
+  isFinance: boolean
+  /** isInsuranceStaff || isITAdmin — kept for convenience */
   isStaff: boolean
+  /** isITAdmin alias — kept for backward compat */
   isAdmin: boolean
   userName: string
   userRole: string
@@ -49,7 +56,8 @@ function StepRow({ done, label, active = false }: { done: boolean; label: string
 }
 
 export function GOPLivePanel({
-  gopId, isDoctor, isStaff, isAdmin, userName, userRole, aiFieldCount, prefillTotal, verifiedCount,
+  gopId, isDoctor, isInsuranceStaff, isITAdmin, isFinance, isStaff, userName, userRole,
+  aiFieldCount, prefillTotal, verifiedCount,
 }: GOPLivePanelProps) {
   const req = useGopStore((s) => s.requests.find((r) => r.id === gopId))
   const { setStaffFinalised, submitToInsurer, setRejected, setExpired } = useGopStore()
@@ -69,8 +77,12 @@ export function GOPLivePanel({
   const surgeonDone      = req.surgeonVerified      ?? req.doctorVerified ?? false
   const anaesthetistDone = req.anaesthetistVerified ?? req.doctorVerified ?? false
   const bothDone         = surgeonDone && anaesthetistDone
+  const financeVerified  = req.financeVerified ?? false
 
-  const isAssignedToMe = isDoctor && req.assignedDoctor === userName
+  const subStatus = getDraftSubStatus(req)
+
+  const isAssignedSurgeon      = isDoctor && req.assignedSurgeon === userName
+  const isAssignedAnaesthetist = isDoctor && req.assignedAnaesthetist === userName
 
   const handleFinalise = () => {
     setLoading('finalise')
@@ -135,16 +147,34 @@ export function GOPLivePanel({
   return (
     <div className="space-y-4">
       {/* ── Status banners ──────────────────────────────── */}
-      {isStaff && req.status === 'DRAFT' && !bothDone && (
+      {isStaff && req.status === 'DRAFT' && subStatus === 'Awaiting surgeon' && (
         <Alert variant="warning">
           <AlertTriangle className="size-4" />
-          <AlertTitle>Awaiting Verification</AlertTitle>
+          <AlertTitle>Awaiting Surgeon Verification</AlertTitle>
           <AlertDescription>
-            <strong>{req.assignedDoctor}</strong> must complete surgeon and anaesthetist verification before this request can be finalised.
+            <strong>{req.assignedSurgeon ?? 'Unassigned'}</strong> must complete surgeon verification before this request can progress.
           </AlertDescription>
         </Alert>
       )}
-      {isStaff && req.status === 'DRAFT' && bothDone && !req.staffFinalised && (
+      {isStaff && req.status === 'DRAFT' && subStatus === 'Awaiting anaesthetist assignment' && (
+        <Alert variant="warning">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Anaesthetist Not Assigned</AlertTitle>
+          <AlertDescription>
+            Assign an anaesthetist to enable anaesthetist verification.
+          </AlertDescription>
+        </Alert>
+      )}
+      {isStaff && req.status === 'DRAFT' && subStatus === 'Awaiting anaesthetist' && (
+        <Alert variant="warning">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Awaiting Anaesthetist Verification</AlertTitle>
+          <AlertDescription>
+            <strong>{req.assignedAnaesthetist}</strong> must complete anaesthetist verification before this request can be finalised.
+          </AlertDescription>
+        </Alert>
+      )}
+      {isStaff && req.status === 'DRAFT' && subStatus === 'Ready to finalise' && (
         <Alert variant="info">
           <Clock className="size-4" />
           <AlertTitle>Ready for Finalisation</AlertTitle>
@@ -153,7 +183,7 @@ export function GOPLivePanel({
           </AlertDescription>
         </Alert>
       )}
-      {isStaff && req.status === 'DRAFT' && req.staffFinalised && (
+      {isStaff && req.status === 'DRAFT' && subStatus === 'Ready to submit' && (
         <Alert variant="info">
           <CheckSquare className="size-4" />
           <AlertTitle>Finalised — Ready to Submit</AlertTitle>
@@ -196,6 +226,18 @@ export function GOPLivePanel({
             <span className="text-sm text-muted-foreground">Current Status</span>
             <GOPStatusBadge status={req.status} />
           </div>
+          {subStatus && (() => {
+            const s = DRAFT_SUB_STATUS_STYLES[subStatus]
+            return (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Stage</span>
+                <span className={`flex items-center gap-1.5 text-xs font-medium ${s.text}`}>
+                  <span className={`size-1.5 rounded-full ${s.dot} shrink-0`} />
+                  {subStatus}
+                </span>
+              </div>
+            )
+          })()}
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Insurer</span>
             <span className="font-medium px-2 py-0.5 rounded-full bg-muted text-xs">{req.insurer}</span>
@@ -216,14 +258,26 @@ export function GOPLivePanel({
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Verification Progress</p>
             <StepRow done={surgeonDone} label="Surgeon verification" active={!surgeonDone} />
             <StepRow done={anaesthetistDone} label="Anaesthetist verification" active={surgeonDone && !anaesthetistDone} />
-            <StepRow done={!!req.staffFinalised} label="Staff finalisation" active={bothDone && !req.staffFinalised} />
+            <StepRow done={financeVerified} label="Finance review" active={bothDone && !financeVerified} />
+            <StepRow done={!!req.staffFinalised} label="Staff finalisation" active={bothDone && financeVerified && !req.staffFinalised} />
           </div>
+
+          {(req.status === 'DRAFT' || req.status === 'SUBMITTED') && (
+            <>
+              <Separator />
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">SLA Tracker</p>
+                <SLAIndicator req={req} compact={false} />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* ── Action buttons ──────────────────────────────── */}
+      {/* ── DRAFT action buttons ─────────────────────────── */}
       {req.status === 'DRAFT' && (
         <div className="flex flex-col gap-2">
+          {/* Edit Form — INSURANCE_STAFF and IT_ADMIN only */}
           {isStaff && (
             <Link href={`/gop/${req.id}/form`}>
               <Button variant="outline" className="w-full justify-start">
@@ -233,8 +287,8 @@ export function GOPLivePanel({
             </Link>
           )}
 
-          {/* Doctor: surgeon verification button */}
-          {isDoctor && isAssignedToMe && !surgeonDone && (
+          {/* Surgeon verification — assigned surgeon only */}
+          {isAssignedSurgeon && !surgeonDone && (
             <Link href={`/gop/${req.id}/verify/surgeon`}>
               <Button className="w-full justify-start">
                 <ClipboardCheck className="size-3.5 mr-1.5" />
@@ -243,8 +297,8 @@ export function GOPLivePanel({
             </Link>
           )}
 
-          {/* Doctor: anaesthetist button only after surgeon done */}
-          {isDoctor && isAssignedToMe && surgeonDone && !anaesthetistDone && (
+          {/* Anaesthetist verification — assigned anaesthetist only, after surgeon done */}
+          {isAssignedAnaesthetist && surgeonDone && !anaesthetistDone && (
             <Link href={`/gop/${req.id}/verify/anaesthetist`}>
               <Button className="w-full justify-start">
                 <ClipboardCheck className="size-3.5 mr-1.5" />
@@ -253,17 +307,18 @@ export function GOPLivePanel({
             </Link>
           )}
 
-          {/* Finance review — visible to all when at least surgeon done */}
+          {/* Finance Review — visible to all once surgeon done */}
           {surgeonDone && (
             <Link href={`/gop/${req.id}/verify/finance`}>
               <Button variant="outline" className="w-full justify-start">
                 <FileText className="size-3.5 mr-1.5" />
-                View Finance Review
+                {isFinance ? 'Finance Review' : 'View Finance Review'}
               </Button>
             </Link>
           )}
 
-          {isStaff && bothDone && !req.staffFinalised && (
+          {/* Mark as Finalised — INSURANCE_STAFF + IT_ADMIN, all verifications done */}
+          {isStaff && bothDone && financeVerified && !req.staffFinalised && (
             <Button
               variant="outline"
               className="w-full justify-start border-blue-300 text-blue-700 hover:bg-blue-50"
@@ -277,6 +332,7 @@ export function GOPLivePanel({
             </Button>
           )}
 
+          {/* Submit to Insurer — INSURANCE_STAFF + IT_ADMIN, after finalised */}
           {isStaff && req.staffFinalised && (
             <Button
               className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white"
@@ -292,52 +348,60 @@ export function GOPLivePanel({
         </div>
       )}
 
-      {/* Admin: Mark as Expired — only for SUBMITTED */}
-      {isAdmin && req.status === 'SUBMITTED' && (
-        <Button
-          variant="outline"
-          className="w-full justify-start border-orange-300 text-orange-700 hover:bg-orange-50"
-          onClick={() => setExpireOpen(true)}
-          disabled={!!loading}
-        >
-          <TimerOff className="size-3.5 mr-1.5" />
-          Mark as Expired
-        </Button>
-      )}
+      {/* ── SUBMITTED action buttons ─────────────────────── */}
+      {req.status === 'SUBMITTED' && (
+        <div className="flex flex-col gap-2">
+          {/* Record Approval — INSURANCE_STAFF only (Part 7: excluded from IT_ADMIN) */}
+          {isInsuranceStaff && (
+            <Button
+              className="w-full justify-start bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleApprove}
+              disabled={!!loading}
+            >
+              {loading === 'approve'
+                ? <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                : <ThumbsUp className="size-3.5 mr-1.5" />}
+              {loading === 'approve' ? 'Recording…' : 'Record Approval'}
+            </Button>
+          )}
 
-      {isStaff && (req.status === 'APPROVED' || req.status === 'SUBMITTED' || req.status === 'REJECTED') && (
-        <div className="space-y-1.5">
-          <DownloadPdfButton gopId={req.id} status={req.status} />
-          {req.status === 'REJECTED' && (
-            <p className="text-[11px] text-muted-foreground leading-snug px-0.5">
-              This document reflects the request at time of rejection and may be used for appeal or audit purposes.
-            </p>
+          {/* Record Rejection — INSURANCE_STAFF only (Part 7: excluded from IT_ADMIN) */}
+          {isInsuranceStaff && (
+            <Button
+              variant="destructive"
+              className="w-full justify-start"
+              onClick={() => setRejectOpen(true)}
+              disabled={!!loading}
+            >
+              <ThumbsDown className="size-3.5 mr-1.5" />
+              Record Rejection
+            </Button>
+          )}
+
+          {/* Mark as Expired — INSURANCE_STAFF + IT_ADMIN */}
+          {isStaff && (
+            <Button
+              variant="outline"
+              className="w-full justify-start border-orange-300 text-orange-700 hover:bg-orange-50"
+              onClick={() => setExpireOpen(true)}
+              disabled={!!loading}
+            >
+              <TimerOff className="size-3.5 mr-1.5" />
+              Mark as Expired
+            </Button>
           )}
         </div>
       )}
 
-      {/* Admin: Approve / Reject */}
-      {isAdmin && req.status === 'SUBMITTED' && (
-        <div className="flex flex-col gap-2">
-          <Button
-            className="w-full justify-start bg-green-600 hover:bg-green-700 text-white"
-            onClick={handleApprove}
-            disabled={!!loading}
-          >
-            {loading === 'approve'
-              ? <Loader2 className="size-3.5 mr-1.5 animate-spin" />
-              : <ThumbsUp className="size-3.5 mr-1.5" />}
-            {loading === 'approve' ? 'Approving…' : 'Approve Request'}
-          </Button>
-          <Button
-            variant="destructive"
-            className="w-full justify-start"
-            onClick={() => setRejectOpen(true)}
-            disabled={!!loading}
-          >
-            <ThumbsDown className="size-3.5 mr-1.5" />
-            Reject Request
-          </Button>
+      {/* Download PDF — INSURANCE_STAFF, IT_ADMIN, FINANCE on terminal statuses */}
+      {(isStaff || isFinance) && (req.status === 'APPROVED' || req.status === 'SUBMITTED' || req.status === 'REJECTED') && (
+        <div className="space-y-1.5">
+          <DownloadPdfButton gopId={req.id} status={req.status} />
+          {req.status === 'REJECTED' && isInsuranceStaff && (
+            <p className="text-[11px] text-muted-foreground leading-snug px-0.5">
+              This document reflects the request at time of rejection and may be used for appeal or audit purposes.
+            </p>
+          )}
         </div>
       )}
 
@@ -360,7 +424,7 @@ export function GOPLivePanel({
               disabled={loading === 'expire'}
               onClick={() => {
                 setLoading('expire')
-                setExpired(gopId, performer, 'Manually expired by admin')
+                setExpired(gopId, performer, 'Manually expired')
                 setExpireOpen(false)
                 setLoading(null)
                 toast.success('Request marked as expired.')
@@ -379,7 +443,7 @@ export function GOPLivePanel({
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject GOP Request</DialogTitle>
+            <DialogTitle>Record Rejection</DialogTitle>
             <DialogDescription>
               Provide a reason for rejection. This will be recorded and sent to the responsible staff.
             </DialogDescription>

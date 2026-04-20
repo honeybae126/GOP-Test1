@@ -31,11 +31,13 @@ export function PatientSearchList({ patients, coverages }: PatientSearchListProp
 
   const coverageMap = useMemo(() => {
     const map: Record<string, MockCoverage> = {}
-    coverages.forEach(c => {
-      const patientId = c.beneficiary.reference.split('/')[1]
-      map[patientId] = c
-    })
-    return map
+    if (Array.isArray(coverages)) {
+      coverages.forEach(c => {
+        const patientId = c.beneficiary.reference.split('/')[1]
+        map[patientId] = c
+      });
+    }
+    return map;
   }, [coverages])
 
   const filtered = useMemo(() => {
@@ -140,7 +142,7 @@ export function PatientSearchList({ patients, coverages }: PatientSearchListProp
                 {address && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <MapPin className="size-3" />
-                    {address.line.join(', ')}, {address.city}
+                    {[...(address.line ?? []), address.city].filter(Boolean).join(', ')}
                   </div>
                 )}
 

@@ -7,37 +7,55 @@ interface GOPStatusBadgeProps {
   className?: string
 }
 
-const STATUS_CONFIG: Record<GOPStatus, { label: string; className: string }> = {
+const statusStyles = {
   DRAFT: {
-    label: 'Draft',
-    className: 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100',
+    backgroundColor: '#F0F2F8',
+    color: '#6B7494'
   },
   SUBMITTED: {
-    label: 'Submitted',
-    className: 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100',
+    backgroundColor: '#EFF4FF',
+    color: '#2D6BF4'
   },
   APPROVED: {
-    label: 'Approved',
-    className: 'bg-green-100 text-green-700 border-green-200 hover:bg-green-100',
+    backgroundColor: '#EDFAF3',
+    color: '#1A9E4A'
   },
   REJECTED: {
-    label: 'Rejected',
-    className: 'bg-red-100 text-red-700 border-red-200 hover:bg-red-100',
+    backgroundColor: '#FFF0F0',
+    color: '#DC2626'
   },
   EXPIRED: {
-    label: 'Expired',
-    className: 'bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100',
-  },
-}
+    backgroundColor: '#FFF8ED',
+    color: '#C47B10'
+  }
+};
+
+const STATUS_CONFIG: Record<GOPStatus, { label: string }> = {
+  DRAFT: { label: 'Draft' },
+  SUBMITTED: { label: 'Submitted' },
+  APPROVED: { label: 'Approved' },
+  REJECTED: { label: 'Rejected' },
+  EXPIRED: { label: 'Expired' }
+};
 
 export function GOPStatusBadge({ status, className }: GOPStatusBadgeProps) {
   const config = STATUS_CONFIG[status]
+  const styles = statusStyles[status]
   return (
-    <Badge
-      variant="outline"
-      className={cn('text-xs font-medium', config.className, className)}
+    <span 
+      className={cn(className)}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        fontSize: '11px',
+        fontWeight: '500',
+        borderRadius: '9999px',
+        padding: '3px 10px',
+        whiteSpace: 'nowrap',
+        ...styles
+      }}
     >
       {config.label}
-    </Badge>
+    </span>
   )
 }

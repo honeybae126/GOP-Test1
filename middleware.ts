@@ -2,11 +2,21 @@ import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
 export default auth((req) => {
-  const isLoggedIn = !!req.auth
-  const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
+  const { pathname } = req.nextUrl
+  const isLoggedIn   = !!req.auth
+  const isAuthPage   = pathname.startsWith('/auth')
 
-  if (!isLoggedIn && !isAuthPage) {
+  // Public auth routes (sign-in, access-denied, etc.) — always allow
+  if (isAuthPage) return
+
+  // Unauthenticated → send to sign-in
+  if (!isLoggedIn) {
     return NextResponse.redirect(new URL('/auth/signin', req.url))
+  }
+
+  // Authenticated but no matching Azure AD group → send to access-denied
+  if ((req.auth as { user?: { accessDenied?: boolean } })?.user?.accessDenied) {
+    return NextResponse.redirect(new URL('/auth/access-denied', req.url))
   }
 })
 

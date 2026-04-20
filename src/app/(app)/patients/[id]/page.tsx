@@ -1,4 +1,5 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { auth } from '@/lib/auth'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -27,6 +28,10 @@ export default async function PatientDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  const session = await auth()
+  if (session?.user?.role === 'DOCTOR') redirect('/gop')
+  if (session?.user?.role === 'FINANCE') redirect('/gop')
+
   const { id } = await params
   const patient = getPatientById(id)
   if (!patient) notFound()
@@ -97,7 +102,7 @@ export default async function PatientDetailPage({
               {patient.address?.[0] && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <MapPin className="size-3.5" />
-                  <span>{patient.address[0].line.join(', ')}, {patient.address[0].city}</span>
+                  <span>{[...(patient.address[0].line ?? []), patient.address[0].city].filter(Boolean).join(', ')}</span>
                 </div>
               )}
               <Separator className="my-2" />
@@ -142,7 +147,7 @@ export default async function PatientDetailPage({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Valid Until</span>
-                      <span>{new Date(coverage.coverageDates.end).toLocaleDateString('en-GB')}</span>
+                      <span>{coverage.coverageDates?.end ? new Date(coverage.coverageDates.end).toLocaleDateString('en-GB') : coverage.period?.end ? new Date(coverage.period.end).toLocaleDateString('en-GB') : '—'}</span>
                     </div>
                   </div>
                 </div>
@@ -233,7 +238,7 @@ export default async function PatientDetailPage({
                           <CardTitle className="text-sm">
                             {req.insurer} · #{req.id.split('-')[1]}
                           </CardTitle>
-                          <CardDescription className="text-xs">{req.assignedDoctor}</CardDescription>
+                          <CardDescription className="text-xs">{req.assignedSurgeon ?? 'Unassigned'}</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                           <GOPStatusBadge status={req.status} />

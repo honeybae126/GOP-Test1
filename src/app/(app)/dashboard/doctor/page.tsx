@@ -1,12 +1,10 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { PageHeader } from '@/components/layout/header'
 import { DoctorPatientList } from '@/components/patients/doctor-patient-list'
 import {
   MOCK_PATIENTS,
   MOCK_ENCOUNTERS,
   MOCK_COVERAGES,
-  MOCK_GOP_REQUESTS,
 } from '@/lib/mock-data'
 
 export default async function DoctorDashboardPage() {
@@ -21,16 +19,19 @@ export default async function DoctorDashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={`${greeting()}, ${session.user.name?.split(' ').slice(0, 2).join(' ') ?? 'Doctor'}`}
-        description="Your current patient list. Initiate GOP requests directly from each patient card."
-      />
+    <div style={{ padding: 24 }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--gray-800)', lineHeight: 1 }}>
+          {greeting()}, {session.user.name?.split(' ').slice(0, 2).join(' ') ?? 'Doctor'}
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 4 }}>
+          Your current patient list. Initiate GOP requests directly from each patient card.
+        </p>
+      </div>
       <DoctorPatientList
         patients={MOCK_PATIENTS}
         encounters={MOCK_ENCOUNTERS}
         coverages={MOCK_COVERAGES}
-        gopRequests={MOCK_GOP_REQUESTS}
       />
     </div>
   )

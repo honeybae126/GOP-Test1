@@ -12,8 +12,8 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { MockPatient, MockCoverage, MockEncounter, MockCostEstimate } from '@/lib/mock-data'
-import { formatPatientName, calculateAge, MOCK_QUESTIONNAIRES } from '@/lib/mock-data'
+import type { MockPatient, MockCoverage, MockEncounter, MockCostEstimate, GOPPriority } from '@/lib/mock-data'
+import { formatPatientName, calculateAge, MOCK_QUESTIONNAIRES, MOCK_COST_ESTIMATES } from '@/lib/mock-data'
 import { useGopStore } from '@/lib/gop-store'
 import {
   Search, User, Shield, Stethoscope, ChevronRight,
@@ -42,6 +42,7 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
   const [selectedEncounterId, setSelectedEncounterId] = useState('')
   const [selectedFormId, setSelectedFormId] = useState('')
   const [search, setSearch] = useState('')
+  const [priority, setPriority] = useState<GOPPriority>('ROUTINE')
   const [createdGopId, setCreatedGopId] = useState<string | null>(null)
   const createGOPRequest = useGopStore((s) => s.createGOPRequest)
   const router = useRouter()
@@ -49,22 +50,27 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
 
   const coverageMap = useMemo(() => {
     const map: Record<string, MockCoverage> = {}
-    coverages.forEach(c => {
-      const pid = c.beneficiary.reference.split('/')[1]
-      map[pid] = c
-    })
-    return map
+
+if (Array.isArray(coverages)) {
+      coverages.forEach(c => {
+        const pid = c.beneficiary.reference.split('/')[1]
+        map[pid] = c
+      });
+    }
+    return map;
+
   }, [coverages])
 
-  const selectedPatient = patients.find(p => p.id === selectedPatientId)
+const selectedPatient = Array.isArray(patients) ? patients.find(p => p.id === selectedPatientId) : undefined
   const selectedCoverage = selectedPatientId ? coverageMap[selectedPatientId] : undefined
-  const patientEncounters = encounters.filter(e => e.subject.reference === `Patient/${selectedPatientId}`)
-  const selectedEncounter = encounters.find(e => e.id === selectedEncounterId)
-  const selectedEstimate = estimates.find(e => e.encounterId === selectedEncounterId)
-  const selectedForm = MOCK_QUESTIONNAIRES.find(q => q.id === selectedFormId)
+const patientEncounters = Array.isArray(encounters) ? encounters.filter(e => e.subject.reference === `Patient/${selectedPatientId}`) : [];
+const selectedEncounter = Array.isArray(encounters) ? encounters.find(e => e.id === selectedEncounterId) : undefined
+const selectedEstimate = Array.isArray(estimates) ? estimates.find(e => e.encounterId === selectedEncounterId) ?? null : null
+  const selectedForm = (MOCK_QUESTIONNAIRES || []).find(q => q.id === selectedFormId) ?? null
 
   const filteredPatients = useMemo(() => {
     const q = search.toLowerCase()
+    if (!Array.isArray(patients)) return [];
     return patients.filter(p =>
       !q ||
       formatPatientName(p).toLowerCase().includes(q) ||
@@ -318,6 +324,42 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
                 <span className="font-medium text-right max-w-[60%]">{item.value}</span>
               </div>
             ))}
+
+            <Separator />
+
+            {/* Priority selector */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Request priority</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'ROUTINE' as GOPPriority, label: 'Routine', desc: 'Standard elective procedure', badgeCls: 'bg-gray-100 text-gray-700 border-gray-200' },
+                  { value: 'URGENT' as GOPPriority, label: 'Urgent', desc: 'Required within 24 hours', badgeCls: 'bg-amber-100 text-amber-700 border-amber-200' },
+                  { value: 'EMERGENCY' as GOPPriority, label: 'Emergency', desc: 'Immediate — life threatening', badgeCls: 'bg-red-100 text-red-700 border-red-200' },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setPriority(opt.value)}
+                    className={cn(
+                      'flex flex-col gap-1.5 rounded-lg border-2 p-3 text-left transition-colors',
+                      priority === opt.value ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                    )}
+                  >
+                    <span className={cn('inline-block rounded-full border px-1.5 py-0.5 text-[10px] font-semibold', opt.badgeCls)}>
+                      {opt.label}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground leading-snug">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+              {priority === 'EMERGENCY' && (
+                <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-800">
+                  <AlertTriangle className="size-3.5 shrink-0 mt-0.5 text-red-600" />
+                  <span>Emergency priority will place this request at the top of all queues. Ensure this classification is clinically justified.</span>
+                </div>
+              )}
+            </div>
+
             <Separator />
             <div className="flex items-center gap-2 text-sm text-violet-700 bg-violet-50 rounded-lg p-3">
               <Sparkles className="size-4 shrink-0" />
@@ -359,10 +401,11 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
                 coverageId: selectedCoverage?.id ?? '',
                 insurer: selectedCoverage?.insurer ?? '',
                 questionnaireId: selectedFormId,
-                assignedDoctor: selectedEncounter?.participant[0]?.individual.display ?? 'Unassigned',
+                assignedSurgeon: selectedEncounter?.participant[0]?.individual.display ?? null,
                 estimatedAmount: selectedEstimate?.total ?? 0,
                 createdBy: session?.user?.name ?? 'Insurance Staff',
                 createdByRole: session?.user?.role ?? 'INSURANCE_STAFF',
+                priority,
               })
               setCreatedGopId(newId)
             }}

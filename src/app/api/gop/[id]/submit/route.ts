@@ -12,7 +12,7 @@ export async function POST(
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const role = session.user.role as string
-  if (role !== 'INSURANCE_STAFF' && role !== 'ADMIN') {
+  if (role !== 'INSURANCE_STAFF' && role !== 'IT_ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -29,20 +29,22 @@ export async function POST(
 
   await createAuditEntry(
     session.user.id as string,
-    role === 'ADMIN' ? 'ADMIN' : 'STAFF',
+    role === 'IT_ADMIN' ? 'ADMIN' : 'STAFF',
     'REQUEST_SUBMITTED_TO_INSURER',
     id
   )
 
   // Notify admins
-  const admins = await prisma.userMetadata.findMany({ where: { role: 'ADMIN' } })
+  const admins = await prisma.userMetadata.findMany({ where: { role: 'IT_ADMIN' } })
   for (const admin of admins) {
-    await createNotification(admin.entraObjectId, 'ADMIN', 'REQUEST_SUBMITTED', id)
+    await createNotification(admin.entraObjectId, 'IT_ADMIN', 'REQUEST_SUBMITTED', id)
   }
 
-  // Notify assigned doctor
-  if (existing.assignedDoctorId) {
-    await createNotification(existing.assignedDoctorId, 'DOCTOR', 'REQUEST_SUBMITTED', id)
+  if (existing.assignedSurgeonId) {
+    await createNotification(existing.assignedSurgeonId, 'DOCTOR', 'REQUEST_SUBMITTED', id)
+  }
+  if (existing.assignedAnaesthetistId) {
+    await createNotification(existing.assignedAnaesthetistId, 'DOCTOR', 'REQUEST_SUBMITTED', id)
   }
 
   return NextResponse.json(updated)

@@ -29,7 +29,8 @@ export type GOPRequestMinAggregateOutputType = {
   status: string | null
   patientId: string | null
   insurerId: string | null
-  assignedDoctorId: string | null
+  assignedSurgeonId: string | null
+  assignedAnaesthetistId: string | null
   submittedAt: Date | null
   expiresAt: Date | null
   approvedAt: Date | null
@@ -45,7 +46,8 @@ export type GOPRequestMaxAggregateOutputType = {
   status: string | null
   patientId: string | null
   insurerId: string | null
-  assignedDoctorId: string | null
+  assignedSurgeonId: string | null
+  assignedAnaesthetistId: string | null
   submittedAt: Date | null
   expiresAt: Date | null
   approvedAt: Date | null
@@ -61,7 +63,8 @@ export type GOPRequestCountAggregateOutputType = {
   status: number
   patientId: number
   insurerId: number
-  assignedDoctorId: number
+  assignedSurgeonId: number
+  assignedAnaesthetistId: number
   formData: number
   submittedAt: number
   expiresAt: number
@@ -69,6 +72,7 @@ export type GOPRequestCountAggregateOutputType = {
   rejectedAt: number
   rejectedReason: number
   expiredAt: number
+  stageEnteredAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -80,7 +84,8 @@ export type GOPRequestMinAggregateInputType = {
   status?: true
   patientId?: true
   insurerId?: true
-  assignedDoctorId?: true
+  assignedSurgeonId?: true
+  assignedAnaesthetistId?: true
   submittedAt?: true
   expiresAt?: true
   approvedAt?: true
@@ -96,7 +101,8 @@ export type GOPRequestMaxAggregateInputType = {
   status?: true
   patientId?: true
   insurerId?: true
-  assignedDoctorId?: true
+  assignedSurgeonId?: true
+  assignedAnaesthetistId?: true
   submittedAt?: true
   expiresAt?: true
   approvedAt?: true
@@ -112,7 +118,8 @@ export type GOPRequestCountAggregateInputType = {
   status?: true
   patientId?: true
   insurerId?: true
-  assignedDoctorId?: true
+  assignedSurgeonId?: true
+  assignedAnaesthetistId?: true
   formData?: true
   submittedAt?: true
   expiresAt?: true
@@ -120,6 +127,7 @@ export type GOPRequestCountAggregateInputType = {
   rejectedAt?: true
   rejectedReason?: true
   expiredAt?: true
+  stageEnteredAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -202,7 +210,8 @@ export type GOPRequestGroupByOutputType = {
   status: string
   patientId: string
   insurerId: string
-  assignedDoctorId: string | null
+  assignedSurgeonId: string | null
+  assignedAnaesthetistId: string | null
   formData: runtime.JsonValue | null
   submittedAt: Date | null
   expiresAt: Date | null
@@ -210,6 +219,7 @@ export type GOPRequestGroupByOutputType = {
   rejectedAt: Date | null
   rejectedReason: string | null
   expiredAt: Date | null
+  stageEnteredAt: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
   _count: GOPRequestCountAggregateOutputType | null
@@ -240,7 +250,8 @@ export type GOPRequestWhereInput = {
   status?: Prisma.StringFilter<"GOPRequest"> | string
   patientId?: Prisma.StringFilter<"GOPRequest"> | string
   insurerId?: Prisma.StringFilter<"GOPRequest"> | string
-  assignedDoctorId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
+  assignedSurgeonId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
+  assignedAnaesthetistId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
   formData?: Prisma.JsonNullableFilter<"GOPRequest">
   submittedAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
@@ -248,6 +259,7 @@ export type GOPRequestWhereInput = {
   rejectedAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
   rejectedReason?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
   expiredAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
+  stageEnteredAt?: Prisma.JsonNullableFilter<"GOPRequest">
   createdAt?: Prisma.DateTimeFilter<"GOPRequest"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"GOPRequest"> | Date | string
   insurer?: Prisma.XOR<Prisma.InsurerConfigScalarRelationFilter, Prisma.InsurerConfigWhereInput>
@@ -260,7 +272,8 @@ export type GOPRequestOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   patientId?: Prisma.SortOrder
   insurerId?: Prisma.SortOrder
-  assignedDoctorId?: Prisma.SortOrderInput | Prisma.SortOrder
+  assignedSurgeonId?: Prisma.SortOrderInput | Prisma.SortOrder
+  assignedAnaesthetistId?: Prisma.SortOrderInput | Prisma.SortOrder
   formData?: Prisma.SortOrderInput | Prisma.SortOrder
   submittedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -268,6 +281,7 @@ export type GOPRequestOrderByWithRelationInput = {
   rejectedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   rejectedReason?: Prisma.SortOrderInput | Prisma.SortOrder
   expiredAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  stageEnteredAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   insurer?: Prisma.InsurerConfigOrderByWithRelationInput
@@ -283,7 +297,8 @@ export type GOPRequestWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.StringFilter<"GOPRequest"> | string
   patientId?: Prisma.StringFilter<"GOPRequest"> | string
   insurerId?: Prisma.StringFilter<"GOPRequest"> | string
-  assignedDoctorId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
+  assignedSurgeonId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
+  assignedAnaesthetistId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
   formData?: Prisma.JsonNullableFilter<"GOPRequest">
   submittedAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
@@ -291,6 +306,7 @@ export type GOPRequestWhereUniqueInput = Prisma.AtLeast<{
   rejectedAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
   rejectedReason?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
   expiredAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
+  stageEnteredAt?: Prisma.JsonNullableFilter<"GOPRequest">
   createdAt?: Prisma.DateTimeFilter<"GOPRequest"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"GOPRequest"> | Date | string
   insurer?: Prisma.XOR<Prisma.InsurerConfigScalarRelationFilter, Prisma.InsurerConfigWhereInput>
@@ -303,7 +319,8 @@ export type GOPRequestOrderByWithAggregationInput = {
   status?: Prisma.SortOrder
   patientId?: Prisma.SortOrder
   insurerId?: Prisma.SortOrder
-  assignedDoctorId?: Prisma.SortOrderInput | Prisma.SortOrder
+  assignedSurgeonId?: Prisma.SortOrderInput | Prisma.SortOrder
+  assignedAnaesthetistId?: Prisma.SortOrderInput | Prisma.SortOrder
   formData?: Prisma.SortOrderInput | Prisma.SortOrder
   submittedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -311,6 +328,7 @@ export type GOPRequestOrderByWithAggregationInput = {
   rejectedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   rejectedReason?: Prisma.SortOrderInput | Prisma.SortOrder
   expiredAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  stageEnteredAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.GOPRequestCountOrderByAggregateInput
@@ -326,7 +344,8 @@ export type GOPRequestScalarWhereWithAggregatesInput = {
   status?: Prisma.StringWithAggregatesFilter<"GOPRequest"> | string
   patientId?: Prisma.StringWithAggregatesFilter<"GOPRequest"> | string
   insurerId?: Prisma.StringWithAggregatesFilter<"GOPRequest"> | string
-  assignedDoctorId?: Prisma.StringNullableWithAggregatesFilter<"GOPRequest"> | string | null
+  assignedSurgeonId?: Prisma.StringNullableWithAggregatesFilter<"GOPRequest"> | string | null
+  assignedAnaesthetistId?: Prisma.StringNullableWithAggregatesFilter<"GOPRequest"> | string | null
   formData?: Prisma.JsonNullableWithAggregatesFilter<"GOPRequest">
   submittedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"GOPRequest"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"GOPRequest"> | Date | string | null
@@ -334,6 +353,7 @@ export type GOPRequestScalarWhereWithAggregatesInput = {
   rejectedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"GOPRequest"> | Date | string | null
   rejectedReason?: Prisma.StringNullableWithAggregatesFilter<"GOPRequest"> | string | null
   expiredAt?: Prisma.DateTimeNullableWithAggregatesFilter<"GOPRequest"> | Date | string | null
+  stageEnteredAt?: Prisma.JsonNullableWithAggregatesFilter<"GOPRequest">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"GOPRequest"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"GOPRequest"> | Date | string
 }
@@ -342,7 +362,8 @@ export type GOPRequestCreateInput = {
   id?: string
   status?: string
   patientId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -350,6 +371,7 @@ export type GOPRequestCreateInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   insurer: Prisma.InsurerConfigCreateNestedOneWithoutGopRequestsInput
@@ -362,7 +384,8 @@ export type GOPRequestUncheckedCreateInput = {
   status?: string
   patientId: string
   insurerId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -370,6 +393,7 @@ export type GOPRequestUncheckedCreateInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutGopRequestInput
@@ -380,7 +404,8 @@ export type GOPRequestUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -388,6 +413,7 @@ export type GOPRequestUpdateInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   insurer?: Prisma.InsurerConfigUpdateOneRequiredWithoutGopRequestsNestedInput
@@ -400,7 +426,8 @@ export type GOPRequestUncheckedUpdateInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   insurerId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -408,6 +435,7 @@ export type GOPRequestUncheckedUpdateInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutGopRequestNestedInput
@@ -419,7 +447,8 @@ export type GOPRequestCreateManyInput = {
   status?: string
   patientId: string
   insurerId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -427,6 +456,7 @@ export type GOPRequestCreateManyInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -435,7 +465,8 @@ export type GOPRequestUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -443,6 +474,7 @@ export type GOPRequestUpdateManyMutationInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -452,7 +484,8 @@ export type GOPRequestUncheckedUpdateManyInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   insurerId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -460,6 +493,7 @@ export type GOPRequestUncheckedUpdateManyInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -474,7 +508,8 @@ export type GOPRequestCountOrderByAggregateInput = {
   status?: Prisma.SortOrder
   patientId?: Prisma.SortOrder
   insurerId?: Prisma.SortOrder
-  assignedDoctorId?: Prisma.SortOrder
+  assignedSurgeonId?: Prisma.SortOrder
+  assignedAnaesthetistId?: Prisma.SortOrder
   formData?: Prisma.SortOrder
   submittedAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
@@ -482,6 +517,7 @@ export type GOPRequestCountOrderByAggregateInput = {
   rejectedAt?: Prisma.SortOrder
   rejectedReason?: Prisma.SortOrder
   expiredAt?: Prisma.SortOrder
+  stageEnteredAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -491,7 +527,8 @@ export type GOPRequestMaxOrderByAggregateInput = {
   status?: Prisma.SortOrder
   patientId?: Prisma.SortOrder
   insurerId?: Prisma.SortOrder
-  assignedDoctorId?: Prisma.SortOrder
+  assignedSurgeonId?: Prisma.SortOrder
+  assignedAnaesthetistId?: Prisma.SortOrder
   submittedAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrder
@@ -507,7 +544,8 @@ export type GOPRequestMinOrderByAggregateInput = {
   status?: Prisma.SortOrder
   patientId?: Prisma.SortOrder
   insurerId?: Prisma.SortOrder
-  assignedDoctorId?: Prisma.SortOrder
+  assignedSurgeonId?: Prisma.SortOrder
+  assignedAnaesthetistId?: Prisma.SortOrder
   submittedAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrder
@@ -606,7 +644,8 @@ export type GOPRequestCreateWithoutNotificationsInput = {
   id?: string
   status?: string
   patientId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -614,6 +653,7 @@ export type GOPRequestCreateWithoutNotificationsInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   insurer: Prisma.InsurerConfigCreateNestedOneWithoutGopRequestsInput
@@ -625,7 +665,8 @@ export type GOPRequestUncheckedCreateWithoutNotificationsInput = {
   status?: string
   patientId: string
   insurerId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -633,6 +674,7 @@ export type GOPRequestUncheckedCreateWithoutNotificationsInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   auditEntries?: Prisma.AuditEntryUncheckedCreateNestedManyWithoutGopRequestInput
@@ -658,7 +700,8 @@ export type GOPRequestUpdateWithoutNotificationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -666,6 +709,7 @@ export type GOPRequestUpdateWithoutNotificationsInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   insurer?: Prisma.InsurerConfigUpdateOneRequiredWithoutGopRequestsNestedInput
@@ -677,7 +721,8 @@ export type GOPRequestUncheckedUpdateWithoutNotificationsInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   insurerId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -685,6 +730,7 @@ export type GOPRequestUncheckedUpdateWithoutNotificationsInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   auditEntries?: Prisma.AuditEntryUncheckedUpdateManyWithoutGopRequestNestedInput
@@ -694,7 +740,8 @@ export type GOPRequestCreateWithoutAuditEntriesInput = {
   id?: string
   status?: string
   patientId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -702,6 +749,7 @@ export type GOPRequestCreateWithoutAuditEntriesInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   insurer: Prisma.InsurerConfigCreateNestedOneWithoutGopRequestsInput
@@ -713,7 +761,8 @@ export type GOPRequestUncheckedCreateWithoutAuditEntriesInput = {
   status?: string
   patientId: string
   insurerId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -721,6 +770,7 @@ export type GOPRequestUncheckedCreateWithoutAuditEntriesInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutGopRequestInput
@@ -746,7 +796,8 @@ export type GOPRequestUpdateWithoutAuditEntriesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -754,6 +805,7 @@ export type GOPRequestUpdateWithoutAuditEntriesInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   insurer?: Prisma.InsurerConfigUpdateOneRequiredWithoutGopRequestsNestedInput
@@ -765,7 +817,8 @@ export type GOPRequestUncheckedUpdateWithoutAuditEntriesInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   insurerId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -773,6 +826,7 @@ export type GOPRequestUncheckedUpdateWithoutAuditEntriesInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutGopRequestNestedInput
@@ -782,7 +836,8 @@ export type GOPRequestCreateWithoutInsurerInput = {
   id?: string
   status?: string
   patientId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -790,6 +845,7 @@ export type GOPRequestCreateWithoutInsurerInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   notifications?: Prisma.NotificationCreateNestedManyWithoutGopRequestInput
@@ -800,7 +856,8 @@ export type GOPRequestUncheckedCreateWithoutInsurerInput = {
   id?: string
   status?: string
   patientId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -808,6 +865,7 @@ export type GOPRequestUncheckedCreateWithoutInsurerInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutGopRequestInput
@@ -848,7 +906,8 @@ export type GOPRequestScalarWhereInput = {
   status?: Prisma.StringFilter<"GOPRequest"> | string
   patientId?: Prisma.StringFilter<"GOPRequest"> | string
   insurerId?: Prisma.StringFilter<"GOPRequest"> | string
-  assignedDoctorId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
+  assignedSurgeonId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
+  assignedAnaesthetistId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
   formData?: Prisma.JsonNullableFilter<"GOPRequest">
   submittedAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
@@ -856,6 +915,7 @@ export type GOPRequestScalarWhereInput = {
   rejectedAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
   rejectedReason?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
   expiredAt?: Prisma.DateTimeNullableFilter<"GOPRequest"> | Date | string | null
+  stageEnteredAt?: Prisma.JsonNullableFilter<"GOPRequest">
   createdAt?: Prisma.DateTimeFilter<"GOPRequest"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"GOPRequest"> | Date | string
 }
@@ -864,7 +924,8 @@ export type GOPRequestCreateManyInsurerInput = {
   id?: string
   status?: string
   patientId: string
-  assignedDoctorId?: string | null
+  assignedSurgeonId?: string | null
+  assignedAnaesthetistId?: string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Date | string | null
   expiresAt?: Date | string | null
@@ -872,6 +933,7 @@ export type GOPRequestCreateManyInsurerInput = {
   rejectedAt?: Date | string | null
   rejectedReason?: string | null
   expiredAt?: Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -880,7 +942,8 @@ export type GOPRequestUpdateWithoutInsurerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -888,6 +951,7 @@ export type GOPRequestUpdateWithoutInsurerInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   notifications?: Prisma.NotificationUpdateManyWithoutGopRequestNestedInput
@@ -898,7 +962,8 @@ export type GOPRequestUncheckedUpdateWithoutInsurerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -906,6 +971,7 @@ export type GOPRequestUncheckedUpdateWithoutInsurerInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutGopRequestNestedInput
@@ -916,7 +982,8 @@ export type GOPRequestUncheckedUpdateManyWithoutInsurerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
-  assignedDoctorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   formData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   submittedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -924,6 +991,7 @@ export type GOPRequestUncheckedUpdateManyWithoutInsurerInput = {
   rejectedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   rejectedReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  stageEnteredAt?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -973,7 +1041,8 @@ export type GOPRequestSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   status?: boolean
   patientId?: boolean
   insurerId?: boolean
-  assignedDoctorId?: boolean
+  assignedSurgeonId?: boolean
+  assignedAnaesthetistId?: boolean
   formData?: boolean
   submittedAt?: boolean
   expiresAt?: boolean
@@ -981,6 +1050,7 @@ export type GOPRequestSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   rejectedAt?: boolean
   rejectedReason?: boolean
   expiredAt?: boolean
+  stageEnteredAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   insurer?: boolean | Prisma.InsurerConfigDefaultArgs<ExtArgs>
@@ -994,7 +1064,8 @@ export type GOPRequestSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   status?: boolean
   patientId?: boolean
   insurerId?: boolean
-  assignedDoctorId?: boolean
+  assignedSurgeonId?: boolean
+  assignedAnaesthetistId?: boolean
   formData?: boolean
   submittedAt?: boolean
   expiresAt?: boolean
@@ -1002,6 +1073,7 @@ export type GOPRequestSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   rejectedAt?: boolean
   rejectedReason?: boolean
   expiredAt?: boolean
+  stageEnteredAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   insurer?: boolean | Prisma.InsurerConfigDefaultArgs<ExtArgs>
@@ -1012,7 +1084,8 @@ export type GOPRequestSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   status?: boolean
   patientId?: boolean
   insurerId?: boolean
-  assignedDoctorId?: boolean
+  assignedSurgeonId?: boolean
+  assignedAnaesthetistId?: boolean
   formData?: boolean
   submittedAt?: boolean
   expiresAt?: boolean
@@ -1020,6 +1093,7 @@ export type GOPRequestSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   rejectedAt?: boolean
   rejectedReason?: boolean
   expiredAt?: boolean
+  stageEnteredAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   insurer?: boolean | Prisma.InsurerConfigDefaultArgs<ExtArgs>
@@ -1030,7 +1104,8 @@ export type GOPRequestSelectScalar = {
   status?: boolean
   patientId?: boolean
   insurerId?: boolean
-  assignedDoctorId?: boolean
+  assignedSurgeonId?: boolean
+  assignedAnaesthetistId?: boolean
   formData?: boolean
   submittedAt?: boolean
   expiresAt?: boolean
@@ -1038,11 +1113,12 @@ export type GOPRequestSelectScalar = {
   rejectedAt?: boolean
   rejectedReason?: boolean
   expiredAt?: boolean
+  stageEnteredAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type GOPRequestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "status" | "patientId" | "insurerId" | "assignedDoctorId" | "formData" | "submittedAt" | "expiresAt" | "approvedAt" | "rejectedAt" | "rejectedReason" | "expiredAt" | "createdAt" | "updatedAt", ExtArgs["result"]["gOPRequest"]>
+export type GOPRequestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "status" | "patientId" | "insurerId" | "assignedSurgeonId" | "assignedAnaesthetistId" | "formData" | "submittedAt" | "expiresAt" | "approvedAt" | "rejectedAt" | "rejectedReason" | "expiredAt" | "stageEnteredAt" | "createdAt" | "updatedAt", ExtArgs["result"]["gOPRequest"]>
 export type GOPRequestInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   insurer?: boolean | Prisma.InsurerConfigDefaultArgs<ExtArgs>
   notifications?: boolean | Prisma.GOPRequest$notificationsArgs<ExtArgs>
@@ -1068,7 +1144,8 @@ export type $GOPRequestPayload<ExtArgs extends runtime.Types.Extensions.Internal
     status: string
     patientId: string
     insurerId: string
-    assignedDoctorId: string | null
+    assignedSurgeonId: string | null
+    assignedAnaesthetistId: string | null
     formData: runtime.JsonValue | null
     submittedAt: Date | null
     expiresAt: Date | null
@@ -1076,6 +1153,7 @@ export type $GOPRequestPayload<ExtArgs extends runtime.Types.Extensions.Internal
     rejectedAt: Date | null
     rejectedReason: string | null
     expiredAt: Date | null
+    stageEnteredAt: runtime.JsonValue | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["gOPRequest"]>
@@ -1508,7 +1586,8 @@ export interface GOPRequestFieldRefs {
   readonly status: Prisma.FieldRef<"GOPRequest", 'String'>
   readonly patientId: Prisma.FieldRef<"GOPRequest", 'String'>
   readonly insurerId: Prisma.FieldRef<"GOPRequest", 'String'>
-  readonly assignedDoctorId: Prisma.FieldRef<"GOPRequest", 'String'>
+  readonly assignedSurgeonId: Prisma.FieldRef<"GOPRequest", 'String'>
+  readonly assignedAnaesthetistId: Prisma.FieldRef<"GOPRequest", 'String'>
   readonly formData: Prisma.FieldRef<"GOPRequest", 'Json'>
   readonly submittedAt: Prisma.FieldRef<"GOPRequest", 'DateTime'>
   readonly expiresAt: Prisma.FieldRef<"GOPRequest", 'DateTime'>
@@ -1516,6 +1595,7 @@ export interface GOPRequestFieldRefs {
   readonly rejectedAt: Prisma.FieldRef<"GOPRequest", 'DateTime'>
   readonly rejectedReason: Prisma.FieldRef<"GOPRequest", 'String'>
   readonly expiredAt: Prisma.FieldRef<"GOPRequest", 'DateTime'>
+  readonly stageEnteredAt: Prisma.FieldRef<"GOPRequest", 'Json'>
   readonly createdAt: Prisma.FieldRef<"GOPRequest", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"GOPRequest", 'DateTime'>
 }

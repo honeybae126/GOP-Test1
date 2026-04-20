@@ -9,20 +9,24 @@ export async function GET(_request: NextRequest) {
 
   const entraObjectId = session.user.id as string
 
-  let user = await prisma.userMetadata.findFirst({ where: { entraObjectId } })
+  try {
+    let user = await prisma.userMetadata.findFirst({ where: { entraObjectId } })
 
-  if (!user) {
-    const roleStr = (session.user.role as string) ?? 'INSURANCE_STAFF'
-    user = await prisma.userMetadata.create({
-      data: {
-        entraObjectId,
-        displayName: session.user.name ?? '',
-        role: roleStr as Role,
-      },
-    })
+    if (!user) {
+      const roleStr = (session.user.role as string) ?? 'INSURANCE_STAFF'
+      user = await prisma.userMetadata.create({
+        data: {
+          entraObjectId,
+          displayName: session.user.name ?? '',
+          role: roleStr as Role,
+        },
+      })
+    }
+
+    return NextResponse.json(user)
+  } catch (e) {
+    return NextResponse.json({ error: 'Database unavailable - demo mode' }, { status: 503 })
   }
-
-  return NextResponse.json(user)
 }
 
 export async function PATCH(request: NextRequest) {

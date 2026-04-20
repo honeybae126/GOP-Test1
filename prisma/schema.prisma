@@ -45,6 +45,7 @@ enum AuditAction {
   USER_CREATED
   USER_DEACTIVATED
   USER_ROLE_CHANGED
+  EXPIRY_WARNING_SENT
 }
 
 model Notification {
@@ -108,7 +109,8 @@ model GOPRequest {
   status           String    @default("DRAFT")
   patientId        String
   insurerId        String
-  assignedDoctorId String?
+  assignedSurgeonId      String?
+  assignedAnaesthetistId String?
   formData         Json?
   submittedAt      DateTime?
   expiresAt        DateTime?
@@ -116,6 +118,7 @@ model GOPRequest {
   rejectedAt       DateTime?
   rejectedReason   String?
   expiredAt        DateTime?
+  stageEnteredAt   Json?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -134,6 +137,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+
 }
 
 model UserMetadata {
@@ -189,8 +193,10 @@ model FeatureFlag {
 
 enum Role {
   INSURANCE_STAFF
+  FINANCE
   DOCTOR
   BILLING_STAFF
+  IT_ADMIN
   ADMIN
 }
 

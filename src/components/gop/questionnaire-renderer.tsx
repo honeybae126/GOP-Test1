@@ -224,11 +224,14 @@ function FieldRenderer({ field, value, isVerified, aiPrefilled, readOnly, onChan
               <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
-              {field.answerOption.map(opt => (
-                <SelectItem key={opt.valueString} value={opt.valueString}>
-                  {opt.valueString}
-                </SelectItem>
-              ))}
+              {field.answerOption.map(opt => {
+                const label = opt.valueString ?? opt.valueCoding?.display ?? ''
+                return (
+                  <SelectItem key={label} value={label}>
+                    {label}
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
         ) : (

@@ -11,7 +11,9 @@ export async function GET(_request: NextRequest) {
   const role = session.user.role as string
   const userId = session.user.id as string
 
-  const where = role === 'DOCTOR' ? { assignedDoctorId: userId } : {}
+  const where = role === 'DOCTOR'
+    ? { OR: [{ assignedSurgeonId: userId }, { assignedAnaesthetistId: userId }] }
+    : {}
 
   const requests = await prisma.gOPRequest.findMany({
     where,
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const role = session.user.role as string
-  if (role !== 'INSURANCE_STAFF' && role !== 'ADMIN') {
+  if (role !== 'INSURANCE_STAFF' && role !== 'IT_ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -44,14 +46,14 @@ export async function POST(request: NextRequest) {
 
   await createAuditEntry(
     session.user.id as string,
-    role === 'ADMIN' ? 'ADMIN' : 'STAFF',
+role === 'IT_ADMIN' ? 'ADMIN' : 'STAFF',
     'REQUEST_CREATED',
     created.id
   )
 
   await createNotification(
     session.user.id as string,
-    role === 'ADMIN' ? 'ADMIN' : 'INSURANCE_STAFF',
+    role === 'IT_ADMIN' ? 'ADMIN' : 'INSURANCE_STAFF',
     'REQUEST_CREATED',
     created.id
   )

@@ -1,200 +1,297 @@
+'use client'
+
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { PlusCircle, User, MapPin, Calendar, Stethoscope, ShieldCheck, ShieldOff, Clock } from 'lucide-react'
-import type { MockPatient, MockEncounter, MockCoverage, MockGOPRequest } from '@/lib/mock-data'
+import type { MockPatient, MockEncounter, MockCoverage, GOPPriority } from '@/lib/mock-data'
 import { formatPatientName, calculateAge } from '@/lib/mock-data'
+import { getDraftSubStatus, DRAFT_SUB_STATUS_STYLES } from '@/lib/gop-utils'
+import { PriorityBadge } from '@/components/gop/priority-badge'
+import { useGopStore } from '@/lib/gop-store'
+import { getSLAStatus } from '@/lib/sla-utils'
+import { SLAIndicator } from '@/components/gop/sla-indicator'
 
 interface DoctorPatientListProps {
   patients: MockPatient[]
   encounters: MockEncounter[]
   coverages: MockCoverage[]
-  gopRequests: MockGOPRequest[]
 }
 
-function CoverageBadge({ coverage }: { coverage: MockCoverage | null }) {
+function CoveragePill({ coverage }: { coverage: MockCoverage | null }) {
   if (!coverage) {
     return (
-      <Badge variant="destructive" className="text-[10px] gap-1">
-        <ShieldOff className="size-2.5" />
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        fontSize: 10, fontWeight: 500, padding: '2px 8px',
+        borderRadius: 'var(--radius-full)',
+        background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA',
+      }}>
+        <ShieldOff style={{ width: 10, height: 10 }} />
         No Coverage
-      </Badge>
+      </span>
     )
   }
   if (coverage.status !== 'active') {
     return (
-      <Badge variant="secondary" className="text-[10px] gap-1">
-        <ShieldOff className="size-2.5" />
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        fontSize: 10, fontWeight: 500, padding: '2px 8px',
+        borderRadius: 'var(--radius-full)',
+        background: 'var(--gray-100)', color: 'var(--gray-600)', border: '1px solid var(--border-medium)',
+      }}>
+        <ShieldOff style={{ width: 10, height: 10 }} />
         Inactive
-      </Badge>
+      </span>
     )
   }
   return (
-    <Badge className="text-[10px] gap-1 bg-green-100 text-green-800 border border-green-200">
-      <ShieldCheck className="size-2.5" />
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      fontSize: 10, fontWeight: 500, padding: '2px 8px',
+      borderRadius: 'var(--radius-full)',
+      background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0',
+    }}>
+      <ShieldCheck style={{ width: 10, height: 10 }} />
       {coverage.insurer}
-    </Badge>
+    </span>
+  )
+}
+
+function EncounterStatusPill({ status }: { status: MockEncounter['status'] }) {
+  if (status === 'in-progress') {
+    return (
+      <span style={{
+        fontSize: 10, fontWeight: 500, padding: '2px 8px',
+        borderRadius: 'var(--radius-full)',
+        background: 'var(--blue-50)', color: 'var(--blue-700)', border: '1px solid var(--blue-200)',
+      }}>Admitted</span>
+    )
+  }
+  if (status === 'planned') {
+    return (
+      <span style={{
+        fontSize: 10, fontWeight: 500, padding: '2px 8px',
+        borderRadius: 'var(--radius-full)',
+        background: '#FFFBEB', color: '#92400E', border: '1px solid #FDE68A',
+      }}>Planned</span>
+    )
+  }
+  return (
+    <span style={{
+      fontSize: 10, fontWeight: 500, padding: '2px 8px',
+      borderRadius: 'var(--radius-full)',
+      background: 'var(--gray-100)', color: 'var(--gray-600)', border: '1px solid var(--border-medium)',
+    }}>Discharged</span>
   )
 }
 
 function formatAdmissionDate(isoDate: string) {
   return new Date(isoDate).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+    day: '2-digit', month: 'short', year: 'numeric',
   })
 }
 
-function EncounterStatusBadge({ status }: { status: MockEncounter['status'] }) {
-  if (status === 'in-progress') {
-    return <Badge className="text-[10px] bg-blue-100 text-blue-800 border border-blue-200">Admitted</Badge>
-  }
-  if (status === 'planned') {
-    return <Badge variant="outline" className="text-[10px] text-amber-700 border-amber-300 bg-amber-50">Planned</Badge>
-  }
-  return <Badge variant="secondary" className="text-[10px]">Discharged</Badge>
-}
+const PRIORITY_ORDER: Record<GOPPriority, number> = { EMERGENCY: 0, URGENT: 1, ROUTINE: 2 }
 
 export function DoctorPatientList({
-  patients,
-  encounters,
-  coverages,
-  gopRequests,
+  patients = [],
+  encounters = [],
+  coverages = [],
 }: DoctorPatientListProps) {
-  // Only show patients that have encounters
-  const patientsWithEncounters = patients
-    .map((patient) => {
-      const encounter = encounters.find(
-        (enc) => enc.subject.reference === `Patient/${patient.id}`
-      )
-      if (!encounter) return null
-      const coverage = coverages.find(
-        (cov) => cov.beneficiary.reference === `Patient/${patient.id}`
-      ) ?? null
-      const existingGOP = gopRequests.find(
-        (r) => r.patientId === patient.id && r.status === 'DRAFT'
-      )
-      const hospitalId = patient.identifier.find(
-        (id) => id.system === 'hospital.local/id'
-      )?.value ?? '—'
-      return { patient, encounter, coverage, existingGOP, hospitalId }
-    })
-    .filter(Boolean) as Array<{
-      patient: MockPatient
-      encounter: MockEncounter
-      coverage: MockCoverage | null
-      existingGOP: MockGOPRequest | undefined
-      hospitalId: string
-    }>
+  const gopRequests = useGopStore((s) => s.requests)
 
-  // Sort: in-progress first, then planned, then finished
+  const patientsWithEncounters = patients.map((patient) => {
+    const encounter = encounters.find((enc) => enc.subject.reference === `Patient/${patient.id}`)
+    if (!encounter) return null
+    const coverage = coverages.find((cov) => cov.beneficiary.reference === `Patient/${patient.id}`) ?? null
+    const existingGOP = gopRequests.find((r) => r.patientId === patient.id && r.status === 'DRAFT')
+    const hospitalId = patient.identifier.find((id) => id.system === 'hospital.local/id')?.value ?? '—'
+    const slaStatus = existingGOP ? getSLAStatus(existingGOP) : null
+    const isOverdue = slaStatus?.isOverdue ?? false
+    return { patient, encounter, coverage, existingGOP, hospitalId, slaStatus, isOverdue }
+  }).filter((x): x is NonNullable<typeof x> => x !== null)
+
   const statusOrder: Record<MockEncounter['status'], number> = {
-    'in-progress': 0,
-    planned: 1,
-    finished: 2,
+    'in-progress': 0, planned: 1, finished: 2,
   }
-  patientsWithEncounters.sort(
-    (a, b) => statusOrder[a.encounter.status] - statusOrder[b.encounter.status]
-  )
+  patientsWithEncounters.sort((a, b) => {
+    const aOverdue = a.isOverdue ? 0 : a.slaStatus?.isWarning ? 1 : 2
+    const bOverdue = b.isOverdue ? 0 : b.slaStatus?.isWarning ? 1 : 2
+    if (aOverdue !== bOverdue) return aOverdue - bOverdue
+    const aPriority = a.existingGOP?.priority ?? 'ROUTINE'
+    const bPriority = b.existingGOP?.priority ?? 'ROUTINE'
+    const pd = PRIORITY_ORDER[aPriority] - PRIORITY_ORDER[bPriority]
+    if (pd !== 0) return pd
+    return statusOrder[a.encounter.status] - statusOrder[b.encounter.status]
+  })
 
   if (patientsWithEncounters.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+      <div style={{
+        background: 'var(--bg-card)',
+        border: '1px dashed var(--border-medium)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '60px 20px',
+        textAlign: 'center',
+        fontSize: 13, color: 'var(--gray-400)',
+      }}>
         No current patients found.
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
+    <div>
+      <p style={{ fontSize: 13, color: 'var(--gray-400)', marginBottom: 16 }}>
         {patientsWithEncounters.length} patient{patientsWithEncounters.length !== 1 ? 's' : ''} currently on record
       </p>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {patientsWithEncounters.map(({ patient, encounter, coverage, existingGOP, hospitalId }) => {
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+        {patientsWithEncounters.map(({ patient, encounter, coverage, existingGOP, hospitalId, isOverdue }) => {
           const doctorDisplay = encounter.participant[0]?.individual.display ?? '—'
           const ward = encounter.serviceProvider.display
           const admissionDate = encounter.period.start
+          const gopPriority = existingGOP?.priority ?? 'ROUTINE'
+          const isEmergency = gopPriority === 'EMERGENCY'
 
           return (
-            <Card key={patient.id} className="flex flex-col">
-              <CardHeader className="pb-3 pt-4 px-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-9 items-center justify-center rounded-full bg-primary/10">
-                      <User className="size-4 text-primary" />
+            <div
+              key={patient.id}
+              style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-light)',
+                borderLeft: isOverdue ? '4px solid #EF4444' : isEmergency ? '4px solid var(--priority-emergency-dot)' : '1px solid var(--border-light)',
+                borderRadius: 'var(--radius-xl)',
+                boxShadow: 'var(--shadow-card)',
+                overflow: 'hidden',
+                display: 'flex', flexDirection: 'column',
+              }}
+            >
+              {/* Card header */}
+              <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border-light)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                      background: isEmergency ? '#FEE2E2' : 'var(--blue-50)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <User style={{ width: 16, height: 16, color: isEmergency ? '#DC2626' : 'var(--blue-600)' }} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold leading-tight">
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-800)', lineHeight: 1.2 }}>
                         {formatPatientName(patient)}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>
                         {calculateAge(patient.birthDate)} yrs · {patient.gender}
-                      </p>
+                      </div>
                     </div>
                   </div>
-                  <EncounterStatusBadge status={encounter.status} />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                    <EncounterStatusPill status={encounter.status} />
+                    {gopPriority !== 'ROUTINE' && existingGOP && (
+                      <PriorityBadge priority={gopPriority} size="sm" />
+                    )}
+                    {existingGOP && (
+                      <SLAIndicator req={existingGOP} compact />
+                    )}
+                  </div>
                 </div>
-              </CardHeader>
+              </div>
 
-              <CardContent className="px-4 pb-4 flex flex-col flex-1 gap-3">
-                {/* Detail rows */}
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[10px]">
-                      {hospitalId}
-                    </span>
-                    <CoverageBadge coverage={coverage} />
+              {/* Card body */}
+              <div style={{ padding: '12px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {/* Info rows */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+                      background: 'var(--gray-100)', color: 'var(--gray-600)',
+                      padding: '2px 6px', borderRadius: 4,
+                    }}>{hospitalId}</span>
+                    <CoveragePill coverage={coverage} />
                   </div>
-
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <MapPin className="size-3 shrink-0" />
-                    <span className="truncate">{ward}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--gray-500)' }}>
+                    <MapPin style={{ width: 12, height: 12, flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ward}</span>
                   </div>
-
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Calendar className="size-3 shrink-0" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--gray-500)' }}>
+                    <Calendar style={{ width: 12, height: 12, flexShrink: 0 }} />
                     <span>Admitted {formatAdmissionDate(admissionDate)}</span>
                   </div>
-
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Stethoscope className="size-3 shrink-0" />
-                    <span className="truncate">{doctorDisplay}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--gray-500)' }}>
+                    <Stethoscope style={{ width: 12, height: 12, flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doctorDisplay}</span>
                   </div>
-
                   {encounter.reasonCode?.[0] && (
-                    <p className="text-[11px] text-muted-foreground italic border-t pt-1.5 mt-1">
+                    <p style={{
+                      fontSize: 11, color: 'var(--gray-400)', fontStyle: 'italic',
+                      borderTop: '1px solid var(--border-light)', paddingTop: 8, marginTop: 2,
+                    }}>
                       {encounter.reasonCode[0].text}
                     </p>
                   )}
                 </div>
 
-                {/* Actions */}
-                <div className="mt-auto pt-2 flex gap-2">
-                  <Link href={`/patients/${patient.id}`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full text-xs">
+                {/* Action buttons */}
+                <div style={{ marginTop: 'auto', paddingTop: 10, display: 'flex', gap: 8 }}>
+                  <Link href={`/patients/${patient.id}`} style={{ flex: 1, textDecoration: 'none' }}>
+                    <button style={{
+                      width: '100%', padding: '7px 0',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: 'var(--radius-md)', background: 'var(--bg-card)',
+                      fontSize: 12, fontWeight: 500, color: 'var(--gray-700)', cursor: 'pointer',
+                    }}
+                      className="hover:bg-[#F8FAFF] transition-colors"
+                    >
                       View Profile
-                    </Button>
+                    </button>
                   </Link>
                   {existingGOP ? (
-                    <Link href={`/gop/${existingGOP.id}`} className="flex-1">
-                      <Button size="sm" variant="outline" className="w-full text-xs gap-1 border-amber-300 text-amber-700 hover:bg-amber-50">
-                        <Clock className="size-3" />
-                        Open GOP
-                      </Button>
-                    </Link>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <Link href={`/gop/${existingGOP.id}`} style={{ textDecoration: 'none' }}>
+                        <button style={{
+                          width: '100%', padding: '7px 0',
+                          border: '1px solid #FDE68A',
+                          borderRadius: 'var(--radius-md)', background: '#FFFBEB',
+                          fontSize: 12, fontWeight: 500, color: '#92400E',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                        }}
+                          className="hover:bg-[#FEF3C7] transition-colors"
+                        >
+                          <Clock style={{ width: 11, height: 11 }} />
+                          Open GOP
+                        </button>
+                      </Link>
+                      {(() => {
+                        const sub = getDraftSubStatus(existingGOP)
+                        if (!sub) return null
+                        const s = DRAFT_SUB_STATUS_STYLES[sub]
+                        return (
+                          <span className={`block text-center rounded-full font-medium ${s.pill}`} style={{ fontSize: 10, padding: '2px 6px' }}>
+                            {sub}
+                          </span>
+                        )
+                      })()}
+                    </div>
                   ) : (
-                    <Link href={`/gop/new?patientId=${patient.id}`} className="flex-1">
-                      <Button size="sm" className="w-full text-xs gap-1">
-                        <PlusCircle className="size-3" />
+                    <Link href={`/gop/new?patientId=${patient.id}`} style={{ flex: 1, textDecoration: 'none' }}>
+                      <button style={{
+                        width: '100%', padding: '7px 0',
+                        border: 'none',
+                        borderRadius: 'var(--radius-md)', background: 'var(--blue-600)',
+                        fontSize: 12, fontWeight: 500, color: '#fff',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                        boxShadow: '0 1px 3px rgba(45,107,244,0.3)',
+                      }}
+                        className="hover:bg-[var(--blue-700)] transition-colors"
+                      >
+                        <PlusCircle style={{ width: 11, height: 11 }} />
                         Initiate GOP
-                      </Button>
+                      </button>
                     </Link>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )
         })}
       </div>

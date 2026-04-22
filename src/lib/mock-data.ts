@@ -37,6 +37,8 @@ export type AuditAction =
   | 'COST_RECONCILED'
   | 'SUPPLEMENTARY_FLAGGED'
   | 'COST_UPDATED'
+  | 'COST_EDITED'
+  | 'NOTE_ADDED'
 
 export interface CostLineItem {
   id: string
@@ -49,6 +51,7 @@ export interface CostLineItem {
   amount: number
   discount: number
   netAmount: number
+  editedByFinance?: boolean
 }
 
 export interface AuditEntry {
@@ -142,6 +145,13 @@ export interface MockGOPRequest {
   approvedAt?: string | null
   rejectedAt?: string | null
   resolvedAt?: string | null
+  decidedAt?: string | null
+  // Registration numbers captured on verify pages
+  surgeonRegistrationNumber?: string | null
+  anaesthetistRegistrationNumber?: string | null
+  // Appeal identity
+  isAppeal?: boolean
+  linkedToId?: string | null
   // Cost
   estimatedAmount: number
   estimatedCost?: number
@@ -521,7 +531,8 @@ export const MOCK_GOP_REQUESTS: MockGOPRequest[] = [
     },
     createdAt: '2026-03-01T14:00:00.000Z', updatedAt: '2026-03-20T15:30:00.000Z', createdBy: 'Insurance Staff',
     submittedAt: '2026-03-06T11:00:00.000Z', expiresAt: '2026-04-05T11:00:00.000Z',
-    approvedAt: '2026-03-20T15:30:00.000Z', rejectedAt: null, resolvedAt: '2026-03-20T15:30:00.000Z', notes: null,
+    approvedAt: '2026-03-20T15:30:00.000Z', rejectedAt: null, resolvedAt: '2026-03-20T15:30:00.000Z',
+    decidedAt: '2026-03-20T15:30:00.000Z', notes: null,
     auditLog: [
       mkAudit('al-002-01', 'REQUEST_CREATED',      '2026-03-01T14:00:00.000Z', 'Insurance Staff',   'INSURANCE_STAFF', 'GOP request created for Kosal Pich — Total Knee Replacement with HSC.'),
       mkAudit('al-002-02', 'SURGEON_VERIFIED',      '2026-03-03T10:30:00.000Z', 'Dr. Chan Reaksmey', 'DOCTOR',          'Surgeon verification complete. All clinical fields confirmed.'),
@@ -717,7 +728,7 @@ export const MOCK_GOP_REQUESTS: MockGOPRequest[] = [
   },
   // gop-005-appeal: DRAFT, appeal of gop-005
   {
-    id: 'gop-005-appeal', resourceType: 'Task', quoteNumber: 'EQ26-9', quoteDate: '2026-03-26',
+    id: 'gop-005-appeal', resourceType: 'Task', quoteNumber: 'EQ26-5-A1', quoteDate: '2026-03-26',
     status: 'DRAFT', priority: 'ROUTINE',
     patientId: 'patient-005', patientName: 'Dara Keo',
     encounterId: 'enc-005', coverageId: 'cov-005', insurer: 'APRIL', questionnaireId: 'Q-APRIL-001',
@@ -725,6 +736,7 @@ export const MOCK_GOP_REQUESTS: MockGOPRequest[] = [
     doctorVerified: false, surgeonVerified: false, anaesthetistVerified: false, financeVerified: false, staffFinalised: false,
     hasAiPrefill: true, estimatedAmount: 6350, approvedAmount: null,
     cpi: 1, pricingType: 'NORMAL', pricingUnit: null, marketingPackage: null, employer: 'CamGSM (Metfone)',
+    isAppeal: true, linkedToId: 'gop-005',
     appealOf: 'gop-005', appealVersion: 2, hasAppeal: false,
     appealNotes: 'Patient has acute cholecystitis requiring urgent surgical intervention. The pre-existing condition exclusion cited by APRIL does not apply — the acute inflammation is a new acute condition. Supporting clinical documentation from Dr. Sok Phearith attached.',
     appealStatus: 'in_progress',

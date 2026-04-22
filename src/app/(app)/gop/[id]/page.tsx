@@ -28,7 +28,7 @@ import { CostTable } from '@/components/gop/cost-table'
 import {
   ArrowLeft, User, Shield, Stethoscope,
   DollarSign, CheckCircle, Clock, Sparkles, Activity, FileText, Pencil, RefreshCw, UserCog, UserPlus,
-  AlertCircle, Info,
+  AlertCircle, Info, Download, Printer,
 } from 'lucide-react'
 import { GOPLivePanel } from '@/components/gop/gop-live-panel'
 import { PriorityBadge } from '@/components/gop/priority-badge'
@@ -402,34 +402,49 @@ export default function GOPDetailPage() {
   const { conflictName, dismissed, dismiss } = useEditLock(id, lockUser)
 
   return (
-    <div style={{ padding: 24 }}>
+    <div className="p-6 space-y-6">
       <EditLockBanner conflictName={conflictName} dismissed={dismissed} dismiss={dismiss} />
 
       {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div className="flex items-start justify-between">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--gray-800)', lineHeight: 1 }}>
-              GOP Request — {req.insurer}
-            </h1>
+          <div className="flex items-center gap-2.5 flex-wrap mb-1">
+            <h1 className="text-h1">GOP Request — {req.insurer}</h1>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: 'var(--blue-600)', background: 'var(--blue-50)', padding: '3px 10px', borderRadius: 'var(--radius-full)' }}>
               {req.quoteNumber}
             </span>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 5 }}>
+          <p className="text-tiny mt-0.5">
             Patient: {req.patientName} · Created {new Date(req.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <Link href="/gop" style={{ textDecoration: 'none' }}>
-          <button style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '8px 14px', border: '1px solid var(--border-medium)',
-            borderRadius: 'var(--radius-md)', background: 'var(--bg-card)',
-            fontSize: 13, fontWeight: 500, color: 'var(--gray-700)', cursor: 'pointer',
-          }}>
-            <ArrowLeft style={{ width: 14, height: 14 }} /> Back
-          </button>
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Print Form PDF — any status */}
+          <Button
+            variant="outline" size="sm"
+            onClick={() => { toast.info('Opening print dialog…'); setTimeout(() => window.print(), 200) }}
+          >
+            <Printer className="size-4" />
+            Print
+          </Button>
+
+          {/* Download GOP PDF — APPROVED or SUBMITTED */}
+          {(req.status === 'APPROVED' || req.status === 'SUBMITTED') && (
+            <Button
+              variant="outline" size="sm"
+              onClick={() => toast.success('GOP PDF prepared — download will start shortly. (Demo mode)')}
+            >
+              <Download className="size-4" />
+              Download GOP
+            </Button>
+          )}
+
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/gop">
+              <ArrowLeft className="size-4" /> Back
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Emergency banner */}
@@ -439,7 +454,6 @@ export default function GOPDetailPage() {
           border: '1px solid #FECACA', background: '#FFF0F0',
           borderLeft: '4px solid var(--priority-emergency-dot)',
           borderRadius: 'var(--radius-lg)', padding: '12px 16px',
-          marginBottom: 16,
         }}>
           <AlertCircle style={{ width: 16, height: 16, color: 'var(--priority-emergency-text)', flexShrink: 0 }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--priority-emergency-text)', flex: 1 }}>
@@ -454,7 +468,6 @@ export default function GOPDetailPage() {
           display: 'flex', alignItems: 'flex-start', gap: 12,
           border: '1px solid var(--blue-200)', background: 'var(--blue-50)',
           borderRadius: 'var(--radius-lg)', padding: '12px 16px',
-          marginBottom: 16,
         }}>
           <Info style={{ width: 15, height: 15, color: 'var(--blue-600)', flexShrink: 0, marginTop: 1 }} />
           <div style={{ fontSize: 13, color: 'var(--blue-700)', flex: 1 }}>
@@ -519,6 +532,26 @@ export default function GOPDetailPage() {
                 </div>
               </Link>
             ) : null
+          )}
+
+          {/* Finance Review action — Finance role, both doctors verified, finance not yet verified */}
+          {isFinance && (req.surgeonVerified || req.doctorVerified) && (req.anaesthetistVerified || req.doctorVerified) && !req.financeVerified && req.status === 'DRAFT' && (
+            <Link href={`/gop/${req.id}/verify/finance`} style={{ textDecoration: 'none' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '12px 14px', borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, var(--blue-50) 0%, var(--ai-bg) 100%)',
+                border: '1px solid var(--blue-200)', cursor: 'pointer',
+                transition: 'box-shadow 0.15s',
+              }}>
+                <DollarSign style={{ width: 15, height: 15, color: 'var(--blue-600)', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--blue-700)' }}>Go to Finance Review</div>
+                  <div style={{ fontSize: 11, color: 'var(--blue-500)', marginTop: 1 }}>Both doctor verifications complete</div>
+                </div>
+                <ArrowLeft style={{ width: 13, height: 13, color: 'var(--blue-400)', transform: 'rotate(180deg)', flexShrink: 0 }} />
+              </div>
+            </Link>
           )}
 
           {/* Priority card */}
@@ -770,6 +803,18 @@ export default function GOPDetailPage() {
                   <CardSectionHeader
                     icon={<DollarSign style={{ width: 12, height: 12, color: 'var(--gray-400)' }} />}
                     title="Cost Estimate"
+                    action={req.lineItems.some(item => item.editedByFinance) ? (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        fontSize: 10, fontWeight: 600, padding: '2px 8px',
+                        borderRadius: 'var(--radius-full)',
+                        background: '#FFFBEB', color: '#92400E',
+                        border: '1px solid #FDE68A',
+                      }}>
+                        <Pencil style={{ width: 9, height: 9 }} />
+                        Finance edited
+                      </span>
+                    ) : undefined}
                   />
                   <div style={{ padding: 16 }}>
                     <div style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 12 }}>
@@ -796,12 +841,12 @@ export default function GOPDetailPage() {
               {prefillAnswers.length > 0 && (
                 <DetailCard>
                   <CardSectionHeader
-                    icon={<Sparkles style={{ width: 12, height: 12, color: '#7B6EEF' }} />}
+                    icon={<Sparkles style={{ width: 12, height: 12, color: 'var(--ai-color)' }} />}
                     title="Form Answers Summary"
                   />
                   <div style={{ padding: 16 }}>
                     <p style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 12 }}>
-                      Fields marked <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 'var(--radius-full)', background: '#F0EEFF', color: '#7B6EEF', border: '1px solid #C4BFFA' }}>AI</span> were prefilled by the AI service and require human verification.
+                      Fields marked <span className="badge badge-ai" style={{ fontSize: 9, padding: '1px 6px', verticalAlign: 'middle' }}>AI</span> were prefilled by the AI service and require human verification.
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {prefillAnswers.filter(a => a.answer !== '').map((answer) => (
@@ -818,10 +863,10 @@ export default function GOPDetailPage() {
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                             {answer.aiPrefilled && (
-                              <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 'var(--radius-full)', background: '#F0EEFF', color: '#7B6EEF', border: '1px solid #C4BFFA' }}>AI</span>
+                              <span className="badge badge-ai" style={{ fontSize: 9, padding: '1px 5px' }}>AI</span>
                             )}
                             {answer.humanVerified
-                              ? <CheckCircle style={{ width: 13, height: 13, color: '#1A9E4A' }} />
+                              ? <CheckCircle style={{ width: 13, height: 13, color: 'var(--success)' }} />
                               : <Clock style={{ width: 13, height: 13, color: '#C47B10' }} />}
                           </div>
                         </div>

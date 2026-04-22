@@ -6,17 +6,13 @@ function isEnvConfigured(val: string | undefined, ...placeholders: string[]): bo
 
 export default function SignInPage() {
   const ssoConfigured =
-    isEnvConfigured(
-      process.env.ENTRA_ID_CLIENT_ID,
-      'placeholder',
-      '00000000-0000-0000-0000-000000000000'
-    ) &&
-    isEnvConfigured(
-      process.env.ENTRA_ID_CLIENT_SECRET,
-      'placeholder',
-      'placeholder-secret'
-    ) &&
+    isEnvConfigured(process.env.ENTRA_ID_CLIENT_ID, 'placeholder', '00000000-0000-0000-0000-000000000000') &&
+    isEnvConfigured(process.env.ENTRA_ID_CLIENT_SECRET, 'placeholder', 'placeholder-secret') &&
     isEnvConfigured(process.env.ENTRA_ID_TENANT_ID, 'placeholder')
 
-  return <SignInForm ssoConfigured={ssoConfigured} />
+  return (
+    <div className="auth-wrapper">
+      <SignInForm ssoConfigured={ssoConfigured} />
+    </div>
+  )
 }

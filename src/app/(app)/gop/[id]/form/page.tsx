@@ -6,7 +6,6 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useGopStore } from '@/lib/gop-store'
-import { PageHeader } from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -113,33 +112,28 @@ export default function GOPFormPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <PageHeader
-        title={questionnaire.title}
-        description={`GOP Request #${req.id} · Quote No. ${req.quoteNumber} · ${req.patientName}`}
-      >
-        <div className="flex gap-2 text-sm text-muted-foreground items-center">
-          <span className="font-mono font-semibold text-foreground">Quote No. {req.quoteNumber}</span>
-          <span>|</span>
-          <span>Quote Date: {req.quoteDate.split('-').reverse().join('/')}</span>
+<div className="p-6 space-y-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-h1">{questionnaire.title}</h1>
+          <p className="text-body mt-1.5" style={{ color: '#6B7494' }}>
+            GOP Request #{req.id} · {req.patientName}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.open(`/print/gop/${req.id}/form`, '_blank')}
-          >
-            <FileDown className="size-3 mr-1" />
-            Print Form PDF
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--gray-700)' }}>Quote {req.quoteNumber}</span>
+            {' · '}{req.quoteDate.split('-').reverse().join('/')}
+          </span>
+          <Button variant="outline" size="sm" onClick={() => window.open(`/print/gop/${req.id}/form`, '_blank')}>
+            <FileDown className="size-4" /> Print PDF
           </Button>
-          <Link href={`/gop/${req.id}`}>
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="size-3 mr-1" />
-              Back to Request
-            </Button>
-          </Link>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/gop/${req.id}`}><ArrowLeft className="size-4" /> Back</Link>
+          </Button>
         </div>
-      </PageHeader>
+      </div>
 
       {/* ── Pricing settings ───────────────────────────────────── */}
       <Card>

@@ -20,10 +20,10 @@ export function getDraftSubStatus(req: MockGOPRequest): DraftSubStatus | null {
   return 'Ready to submit'
 }
 
-export const DRAFT_SUB_STATUS_STYLES: Record<DraftSubStatus, { pill: string; dot: string; text: string }> = {
-  'Awaiting surgeon':                  { pill: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500', text: 'text-amber-700' },
-  'Awaiting anaesthetist assignment':  { pill: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500', text: 'text-amber-700' },
-  'Awaiting anaesthetist':             { pill: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500', text: 'text-amber-700' },
-  'Ready to finalise':                 { pill: 'bg-blue-100 text-blue-700',   dot: 'bg-blue-500',  text: 'text-blue-700'  },
-  'Ready to submit':                   { pill: 'bg-green-100 text-green-700', dot: 'bg-green-500', text: 'text-green-700' },
+export const DRAFT_SUB_STATUS_STYLES: Record<DraftSubStatus, { color: string; bg: string; border: string }> = {
+  'Awaiting surgeon':                  { bg: 'rgba(245,158,11,0.1)', color: '#92400E', border: '#FDE68A' },
+  'Awaiting anaesthetist assignment':  { bg: 'rgba(245,158,11,0.1)', color: '#92400E', border: '#FDE68A' },
+  'Awaiting anaesthetist':             { bg: 'rgba(245,158,11,0.1)', color: '#92400E', border: '#FDE68A' },
+  'Ready to finalise':                 { bg: 'rgba(59,130,246,0.1)', color: '#1D4ED8', border: '#BFDBFE' },
+  'Ready to submit':                   { bg: 'rgba(16,185,129,0.1)', color: '#065F46', border: '#A7F3D0' },
 }

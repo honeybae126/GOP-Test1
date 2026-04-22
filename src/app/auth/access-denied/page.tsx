@@ -1,75 +1,83 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { ShieldX } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { useSSOConfigStore } from '@/lib/sso-config'
 
 const REQUIRED_GROUPS = ['GOP_Insurance', 'GOP_Finance', 'GOP_Doctor', 'GOP_ITAdmin']
 
 export default function AccessDeniedPage() {
   const { data: session } = useSession()
-  const itContactEmail    = useSSOConfigStore(s => s.itContactEmail)
-
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/auth/signin' })
-  }
+  const itContactEmail = useSSOConfigStore(s => s.itContactEmail)
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Icon + heading */}
-        <div className="flex flex-col items-center text-center gap-3">
-          <div className="size-16 rounded-full bg-red-100 flex items-center justify-center">
-            <ShieldX className="size-8 text-red-600" />
-          </div>
+    <div className="auth-wrapper">
+      <div className="auth-card" style={{ maxWidth: '30rem' }}>
+        {/* Logo */}
+        <div className="auth-logo">
+          <div className="auth-logo-icon">I</div>
           <div>
-            <h1 className="text-2xl font-bold">Access not granted</h1>
-            <p className="text-sm text-muted-foreground mt-2 max-w-sm">
-              Your Microsoft account is not assigned to a GOP system role. Please
-              contact your IT administrator to request access.
-            </p>
+            <div className="auth-logo-name">Intercare</div>
+            <div className="auth-logo-sub">GOP Automation System</div>
           </div>
         </div>
 
-        {/* Info box */}
-        <div className="rounded-lg border bg-white p-4 space-y-3 text-sm shadow-sm">
-          {session?.user?.email && (
-            <div className="flex items-start gap-2">
-              <span className="text-muted-foreground shrink-0">Your account:</span>
-              <span className="font-mono font-medium break-all">{session.user.email}</span>
+        {/* Error icon */}
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <div style={{
+            width: '4rem', height: '4rem', borderRadius: '9999px',
+            background: 'rgba(220, 38, 38, 0.1)', display: 'inline-flex',
+            alignItems: 'center', justifyContent: 'center', marginBottom: '1rem',
+          }}>
+            <i className="fas fa-lock" style={{ fontSize: '1.5rem', color: 'var(--destructive)' }} />
+          </div>
+          <h2 className="auth-title" style={{ textAlign: 'center' }}>Access Denied</h2>
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>
+            You do not have permission to access this system.
+          </p>
+        </div>
+
+        {session?.user?.email && (
+          <div className="alert-banner alert-warning" style={{ marginBottom: '1rem' }}>
+            <i className="fas fa-user-circle" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 500, fontSize: 'var(--font-size-sm)' }}>Signed in as</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', marginTop: 2 }}>{session.user.email}</div>
             </div>
-          )}
-          <div className="border-t pt-3">
-            <p className="text-muted-foreground mb-2">
-              Required: your account must be a member of one of these Azure AD groups:
-            </p>
-            <ul className="space-y-1">
-              {REQUIRED_GROUPS.map(g => (
-                <li key={g} className="flex items-center gap-2">
-                  <span className="size-1.5 rounded-full bg-slate-400 shrink-0" />
-                  <code className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">
-                    {g}
-                  </code>
-                </li>
-              ))}
-            </ul>
+          </div>
+        )}
+
+        <div style={{
+          background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+          padding: 'var(--spacing-md)', marginBottom: '1rem',
+        }}>
+          <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)', marginBottom: '0.5rem', fontWeight: 500 }}>
+            Required Azure AD group membership:
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            {REQUIRED_GROUPS.map(g => (
+              <code key={g} style={{
+                fontSize: '0.75rem', background: 'var(--secondary)',
+                padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)',
+                color: 'var(--foreground)', fontFamily: 'var(--font-mono)',
+              }}>
+                {g}
+              </code>
+            ))}
           </div>
         </div>
 
-        {/* Action */}
-        <Button
-          className="w-full"
-          variant="outline"
-          onClick={handleSignOut}
+        <button
+          onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+          className="btn btn-primary"
+          style={{ width: '100%', justifyContent: 'center', marginBottom: '0.75rem' }}
         >
+          <i className="fas fa-sign-out-alt" />
           Sign in with a different account
-        </Button>
+        </button>
 
-        {/* IT contact */}
-        <p className="text-xs text-center text-muted-foreground">
-          IT Admin contact:{' '}
-          <a href={`mailto:${itContactEmail}`} className="underline hover:text-foreground">
+        <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)', textAlign: 'center' }}>
+          Contact IT Admin:{' '}
+          <a href={`mailto:${itContactEmail}`} style={{ color: 'var(--primary)', fontWeight: 500 }}>
             {itContactEmail}
           </a>
         </p>

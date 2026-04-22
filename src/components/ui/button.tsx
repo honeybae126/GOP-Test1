@@ -1,47 +1,51 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { Slot } from "@radix-ui/react-slot"
-import { cn } from "@/lib/utils"
+import * as React from 'react'
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-[12px] font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-  {
-    variants: {
-      variant: {
-        primary: "bg-[var(--primary)] text-white hover:bg-[var(--primary)]/90 h-11 px-8 min-w-[120px] shadow-md hover:shadow-lg",
-        secondary: "bg-[var(--bg-card)] text-[var(--gray-800)] border border-[var(--border-light)] hover:bg-[var(--bg-card-hover)] h-11 px-8 min-w-[120px] shadow-sm",
-        destructive: "bg-[var(--error)] text-white hover:bg-[var(--error)]/90 h-11 px-8 min-w-[120px] shadow-md",
-        outline: "border border-[var(--border-medium)] bg-background hover:bg-accent hover:text-accent-foreground h-11 px-8 min-w-[120px]",
-      },
-      size: {
-        default: "h-11 px-8",
-        sm: "h-9 rounded-md px-6",
-        lg: "h-12 rounded-[12px] px-10",
-      },
-    },
-    defaultVariants: {
-      variant: "primary",
-      size: "default",
-    },
-  }
-)
+type Variant = 'default' | 'primary' | 'outline' | 'ghost' | 'destructive' | 'link'
+type Size = 'default' | 'sm' | 'md' | 'lg' | 'icon' | 'icon-sm'
 
-interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: Variant
+  size?: Size
   asChild?: boolean
 }
 
-function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
-  const Comp = asChild ? Slot : "button"
+function getClasses(variant: Variant, size: Size): string {
+  const v: Record<Variant, string> = {
+    default:     'btn btn-primary',
+    primary:     'btn btn-primary',
+    outline:     'btn btn-outline',
+    ghost:       'btn btn-ghost',
+    destructive: 'btn btn-destructive',
+    link:        'btn btn-ghost',
+  }
+  const s: Record<Size, string> = {
+    default:  '',
+    md:       '',
+    sm:       'btn-sm',
+    lg:       'btn-lg',
+    icon:     'btn-icon',
+    'icon-sm': 'btn-sm btn-icon',
+  }
+  return [v[variant], s[size]].filter(Boolean).join(' ')
+}
+
+function Button({ className, variant = 'default', size = 'default', asChild = false, children, ...props }: ButtonProps) {
+  const cls = [getClasses(variant, size), className].filter(Boolean).join(' ')
+
+  if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement<{ className?: string }>
+    return React.cloneElement(child, {
+      className: [cls, child.props.className].filter(Boolean).join(' '),
+    })
+  }
+
   return (
-    <Comp
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
+    <button className={cls} {...props}>
+      {children}
+    </button>
   )
 }
-Button.displayName = "Button"
 
-export { Button, buttonVariants }
-
+Button.displayName = 'Button'
+export { Button }
+export type { ButtonProps }

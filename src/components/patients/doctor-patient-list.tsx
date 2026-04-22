@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { PlusCircle, User, MapPin, Calendar, Stethoscope, ShieldCheck, ShieldOff, Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { PlusCircle, MapPin, Calendar, Stethoscope, ShieldCheck, ShieldOff, Clock, Activity } from 'lucide-react'
 import type { MockPatient, MockEncounter, MockCoverage, GOPPriority } from '@/lib/mock-data'
 import { formatPatientName, calculateAge } from '@/lib/mock-data'
 import { getDraftSubStatus, DRAFT_SUB_STATUS_STYLES } from '@/lib/gop-utils'
@@ -16,81 +17,72 @@ interface DoctorPatientListProps {
   coverages: MockCoverage[]
 }
 
+function getPatientInitials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+}
+
+const ENCOUNTER_STATUS_CONFIG = {
+  'in-progress': { label: 'Admitted',   dot: '#2D6BF4', bg: '#EEF3FF', color: '#2D6BF4' },
+  'planned':     { label: 'Planned',    dot: '#F59E0B', bg: '#FFFBEB', color: '#92400E' },
+  'finished':    { label: 'Discharged', dot: '#9BA3B8', bg: '#F0F2F8', color: '#6B7494' },
+} as const
+
+function EncounterStatusDot({ status }: { status: MockEncounter['status'] }) {
+  const cfg = ENCOUNTER_STATUS_CONFIG[status] ?? ENCOUNTER_STATUS_CONFIG['finished']
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full"
+      style={{ background: cfg.bg, color: cfg.color }}
+    >
+      <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
+      {cfg.label}
+    </span>
+  )
+}
+
 function CoveragePill({ coverage }: { coverage: MockCoverage | null }) {
   if (!coverage) {
     return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        fontSize: 10, fontWeight: 500, padding: '2px 8px',
-        borderRadius: 'var(--radius-full)',
-        background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA',
-      }}>
-        <ShieldOff style={{ width: 10, height: 10 }} />
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-100">
+        <ShieldOff className="size-2.5" />
         No Coverage
       </span>
     )
   }
   if (coverage.status !== 'active') {
     return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
-        fontSize: 10, fontWeight: 500, padding: '2px 8px',
-        borderRadius: 'var(--radius-full)',
-        background: 'var(--gray-100)', color: 'var(--gray-600)', border: '1px solid var(--border-medium)',
-      }}>
-        <ShieldOff style={{ width: 10, height: 10 }} />
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+        <ShieldOff className="size-2.5" />
         Inactive
       </span>
     )
   }
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      fontSize: 10, fontWeight: 500, padding: '2px 8px',
-      borderRadius: 'var(--radius-full)',
-      background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0',
-    }}>
-      <ShieldCheck style={{ width: 10, height: 10 }} />
+    <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+      <ShieldCheck className="size-2.5" />
       {coverage.insurer}
     </span>
   )
 }
 
-function EncounterStatusPill({ status }: { status: MockEncounter['status'] }) {
-  if (status === 'in-progress') {
-    return (
-      <span style={{
-        fontSize: 10, fontWeight: 500, padding: '2px 8px',
-        borderRadius: 'var(--radius-full)',
-        background: 'var(--blue-50)', color: 'var(--blue-700)', border: '1px solid var(--blue-200)',
-      }}>Admitted</span>
-    )
-  }
-  if (status === 'planned') {
-    return (
-      <span style={{
-        fontSize: 10, fontWeight: 500, padding: '2px 8px',
-        borderRadius: 'var(--radius-full)',
-        background: '#FFFBEB', color: '#92400E', border: '1px solid #FDE68A',
-      }}>Planned</span>
-    )
-  }
-  return (
-    <span style={{
-      fontSize: 10, fontWeight: 500, padding: '2px 8px',
-      borderRadius: 'var(--radius-full)',
-      background: 'var(--gray-100)', color: 'var(--gray-600)', border: '1px solid var(--border-medium)',
-    }}>Discharged</span>
-  )
-}
-
 function formatAdmissionDate(isoDate: string) {
-  return new Date(isoDate).toLocaleDateString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  })
+  return new Date(isoDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 const PRIORITY_ORDER: Record<GOPPriority, number> = { EMERGENCY: 0, URGENT: 1, ROUTINE: 2 }
+
+const AVATAR_COLORS = [
+  { bg: '#EEF3FF', color: '#2D6BF4' },
+  { bg: '#ECFDF5', color: '#059669' },
+  { bg: '#F5F3FF', color: '#7C3AED' },
+  { bg: '#FFF7ED', color: '#C2410C' },
+  { bg: '#FFF0F9', color: '#BE185D' },
+]
+
+function getAvatarColor(name: string) {
+  const code = name.charCodeAt(0) + (name.charCodeAt(1) ?? 0)
+  return AVATAR_COLORS[code % AVATAR_COLORS.length]
+}
 
 export function DoctorPatientList({
   patients = [],
@@ -110,184 +102,167 @@ export function DoctorPatientList({
     return { patient, encounter, coverage, existingGOP, hospitalId, slaStatus, isOverdue }
   }).filter((x): x is NonNullable<typeof x> => x !== null)
 
-  const statusOrder: Record<MockEncounter['status'], number> = {
-    'in-progress': 0, planned: 1, finished: 2,
-  }
+  const statusOrder: Record<MockEncounter['status'], number> = { 'in-progress': 0, planned: 1, finished: 2 }
   patientsWithEncounters.sort((a, b) => {
     const aOverdue = a.isOverdue ? 0 : a.slaStatus?.isWarning ? 1 : 2
     const bOverdue = b.isOverdue ? 0 : b.slaStatus?.isWarning ? 1 : 2
     if (aOverdue !== bOverdue) return aOverdue - bOverdue
-    const aPriority = a.existingGOP?.priority ?? 'ROUTINE'
-    const bPriority = b.existingGOP?.priority ?? 'ROUTINE'
-    const pd = PRIORITY_ORDER[aPriority] - PRIORITY_ORDER[bPriority]
+    const pd = PRIORITY_ORDER[a.existingGOP?.priority ?? 'ROUTINE'] - PRIORITY_ORDER[b.existingGOP?.priority ?? 'ROUTINE']
     if (pd !== 0) return pd
     return statusOrder[a.encounter.status] - statusOrder[b.encounter.status]
   })
 
   if (patientsWithEncounters.length === 0) {
     return (
-      <div style={{
-        background: 'var(--bg-card)',
-        border: '1px dashed var(--border-medium)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '60px 20px',
-        textAlign: 'center',
-        fontSize: 13, color: 'var(--gray-400)',
-      }}>
+      <div
+        className="rounded-2xl text-center py-16"
+        style={{
+          background: '#FFFFFF',
+          border: '1px dashed #D8DEF0',
+          color: '#6B7494',
+          fontSize: 13,
+        }}
+      >
         No current patients found.
       </div>
     )
   }
 
   return (
-    <div>
-      <p style={{ fontSize: 13, color: 'var(--gray-400)', marginBottom: 16 }}>
-        {patientsWithEncounters.length} patient{patientsWithEncounters.length !== 1 ? 's' : ''} currently on record
+    <div className="space-y-3">
+      <p className="text-xs font-medium" style={{ color: '#6B7494' }}>
+        {patientsWithEncounters.length} patient{patientsWithEncounters.length !== 1 ? 's' : ''} on record
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
         {patientsWithEncounters.map(({ patient, encounter, coverage, existingGOP, hospitalId, isOverdue }) => {
+          const name = formatPatientName(patient)
+          const age = calculateAge(patient.birthDate)
           const doctorDisplay = encounter.participant[0]?.individual.display ?? '—'
           const ward = encounter.serviceProvider.display
-          const admissionDate = encounter.period.start
           const gopPriority = existingGOP?.priority ?? 'ROUTINE'
           const isEmergency = gopPriority === 'EMERGENCY'
+          const avatarColor = getAvatarColor(name)
+          const accentLeft = isOverdue ? '#EF4444' : isEmergency ? '#EF4444' : undefined
 
           return (
             <div
               key={patient.id}
+              className="bg-white rounded-2xl flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-md"
               style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-light)',
-                borderLeft: isOverdue ? '4px solid #EF4444' : isEmergency ? '4px solid var(--priority-emergency-dot)' : '1px solid var(--border-light)',
-                borderRadius: 'var(--radius-xl)',
-                boxShadow: 'var(--shadow-card)',
-                overflow: 'hidden',
-                display: 'flex', flexDirection: 'column',
+                border: `1px solid #D8DEF0`,
+                borderLeft: accentLeft ? `3px solid ${accentLeft}` : '1px solid #D8DEF0',
+                boxShadow: '0 2px 8px rgba(45,107,244,0.06)',
               }}
             >
               {/* Card header */}
-              <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border-light)' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                      background: isEmergency ? '#FEE2E2' : 'var(--blue-50)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <User style={{ width: 16, height: 16, color: isEmergency ? '#DC2626' : 'var(--blue-600)' }} />
+              <div className="flex items-start justify-between gap-3 p-4" style={{ borderBottom: '1px solid #F0F2F8' }}>
+                <div className="flex items-center gap-3">
+                  {/* Initials avatar */}
+                  <div
+                    className="size-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ background: avatarColor.bg, color: avatarColor.color }}
+                  >
+                    {getPatientInitials(name)}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold" style={{ color: '#1A1F3C', lineHeight: 1.2 }}>
+                      {name}
                     </div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-800)', lineHeight: 1.2 }}>
-                        {formatPatientName(patient)}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>
-                        {calculateAge(patient.birthDate)} yrs · {patient.gender}
-                      </div>
+                    <div className="text-xs mt-0.5" style={{ color: '#6B7494' }}>
+                      {age} yrs · {patient.gender}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
-                    <EncounterStatusPill status={encounter.status} />
-                    {gopPriority !== 'ROUTINE' && existingGOP && (
-                      <PriorityBadge priority={gopPriority} size="sm" />
-                    )}
-                    {existingGOP && (
-                      <SLAIndicator req={existingGOP} compact />
-                    )}
-                  </div>
+                </div>
+
+                {/* Status stack */}
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <EncounterStatusDot status={encounter.status} />
+                  {gopPriority !== 'ROUTINE' && existingGOP && (
+                    <PriorityBadge priority={gopPriority} size="sm" />
+                  )}
+                  {existingGOP && <SLAIndicator req={existingGOP} compact />}
                 </div>
               </div>
 
               {/* Card body */}
-              <div style={{ padding: '12px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {/* Info rows */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
-                      background: 'var(--gray-100)', color: 'var(--gray-600)',
-                      padding: '2px 6px', borderRadius: 4,
-                    }}>{hospitalId}</span>
+              <div className="p-4 flex-1 flex flex-col gap-4">
+                {/* Meta info */}
+                <div className="space-y-2">
+                  {/* Hospital ID + coverage */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded"
+                      style={{ background: '#F0F2F8', color: '#6B7494' }}
+                    >
+                      {hospitalId}
+                    </span>
                     <CoveragePill coverage={coverage} />
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--gray-500)' }}>
-                    <MapPin style={{ width: 12, height: 12, flexShrink: 0 }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ward}</span>
+
+                  {/* Details */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs" style={{ color: '#6B7494' }}>
+                      <MapPin className="size-3 flex-shrink-0" />
+                      <span className="truncate">{ward}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs" style={{ color: '#6B7494' }}>
+                      <Calendar className="size-3 flex-shrink-0" />
+                      <span>Admitted {formatAdmissionDate(encounter.period.start)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs" style={{ color: '#6B7494' }}>
+                      <Stethoscope className="size-3 flex-shrink-0" />
+                      <span className="truncate">{doctorDisplay}</span>
+                    </div>
+                    {encounter.reasonCode?.[0] && (
+                      <div className="flex items-start gap-2 text-xs mt-1 pt-2" style={{ color: '#9BA3B8', borderTop: '1px solid #F0F2F8' }}>
+                        <Activity className="size-3 flex-shrink-0 mt-0.5" />
+                        <span className="italic">{encounter.reasonCode[0].text}</span>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--gray-500)' }}>
-                    <Calendar style={{ width: 12, height: 12, flexShrink: 0 }} />
-                    <span>Admitted {formatAdmissionDate(admissionDate)}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--gray-500)' }}>
-                    <Stethoscope style={{ width: 12, height: 12, flexShrink: 0 }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doctorDisplay}</span>
-                  </div>
-                  {encounter.reasonCode?.[0] && (
-                    <p style={{
-                      fontSize: 11, color: 'var(--gray-400)', fontStyle: 'italic',
-                      borderTop: '1px solid var(--border-light)', paddingTop: 8, marginTop: 2,
-                    }}>
-                      {encounter.reasonCode[0].text}
-                    </p>
-                  )}
                 </div>
 
-                {/* Action buttons */}
-                <div style={{ marginTop: 'auto', paddingTop: 10, display: 'flex', gap: 8 }}>
-                  <Link href={`/patients/${patient.id}`} style={{ flex: 1, textDecoration: 'none' }}>
-                    <button style={{
-                      width: '100%', padding: '7px 0',
-                      border: '1px solid var(--border-medium)',
-                      borderRadius: 'var(--radius-md)', background: 'var(--bg-card)',
-                      fontSize: 12, fontWeight: 500, color: 'var(--gray-700)', cursor: 'pointer',
-                    }}
-                      className="hover:bg-[#F8FAFF] transition-colors"
-                    >
-                      View Profile
-                    </button>
-                  </Link>
+                {/* Actions */}
+                <div className="flex gap-2 mt-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="flex-1 h-8 text-xs rounded-lg"
+                  >
+                    <Link href={`/patients/${patient.id}`}>View Profile</Link>
+                  </Button>
+
                   {existingGOP ? (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <Link href={`/gop/${existingGOP.id}`} style={{ textDecoration: 'none' }}>
-                        <button style={{
-                          width: '100%', padding: '7px 0',
-                          border: '1px solid #FDE68A',
-                          borderRadius: 'var(--radius-md)', background: '#FFFBEB',
-                          fontSize: 12, fontWeight: 500, color: '#92400E',
-                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                        }}
-                          className="hover:bg-[#FEF3C7] transition-colors"
-                        >
-                          <Clock style={{ width: 11, height: 11 }} />
-                          Open GOP
-                        </button>
-                      </Link>
+                    <div className="flex-1 flex flex-col gap-1">
+                      <Button
+                        size="sm"
+                        asChild
+                        className="h-8 text-xs w-full rounded-lg"
+                        style={{ background: '#FFFBEB', color: '#92400E', border: '1px solid #FDE68A', boxShadow: 'none' }}
+                      >
+                        <Link href={`/gop/${existingGOP.id}`}>
+                          <Clock className="size-3" /> Open GOP
+                        </Link>
+                      </Button>
                       {(() => {
                         const sub = getDraftSubStatus(existingGOP)
                         if (!sub) return null
                         const s = DRAFT_SUB_STATUS_STYLES[sub]
                         return (
-                          <span className={`block text-center rounded-full font-medium ${s.pill}`} style={{ fontSize: 10, padding: '2px 6px' }}>
+                          <span style={{ display: 'block', textAlign: 'center', borderRadius: 9999, fontWeight: 600, fontSize: 10, padding: '2px 8px', background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
                             {sub}
                           </span>
                         )
                       })()}
                     </div>
                   ) : (
-                    <Link href={`/gop/new?patientId=${patient.id}`} style={{ flex: 1, textDecoration: 'none' }}>
-                      <button style={{
-                        width: '100%', padding: '7px 0',
-                        border: 'none',
-                        borderRadius: 'var(--radius-md)', background: 'var(--blue-600)',
-                        fontSize: 12, fontWeight: 500, color: '#fff',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                        boxShadow: '0 1px 3px rgba(45,107,244,0.3)',
-                      }}
-                        className="hover:bg-[var(--blue-700)] transition-colors"
-                      >
-                        <PlusCircle style={{ width: 11, height: 11 }} />
-                        Initiate GOP
-                      </button>
-                    </Link>
+                    <Button size="sm" asChild className="flex-1 h-8 text-xs rounded-lg">
+                      <Link href={`/gop/new?patientId=${patient.id}`}>
+                        <PlusCircle className="size-3" /> Initiate GOP
+                      </Link>
+                    </Button>
                   )}
                 </div>
               </div>

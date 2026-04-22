@@ -6,7 +6,6 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useGopStore } from '@/lib/gop-store'
-import { PageHeader } from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
 import { DoctorVerification } from '@/components/gop/doctor-verification'
 import {
@@ -42,18 +41,18 @@ export default function DoctorVerificationPage() {
   const prefillAnswers = MOCK_PREFILL_RESPONSE[req.id] ?? []
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <PageHeader
-        title="Physician Verification"
-        description={`Review and verify the AI-prefilled clinical section for ${req.patientName}`}
-      >
-        <Link href={`/gop/${req.id}`}>
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="size-3 mr-1" />
-            Back
-          </Button>
-        </Link>
-      </PageHeader>
+    <div className="p-6 space-y-6 max-w-3xl">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-h1">Physician Verification</h1>
+          <p className="text-body mt-1.5" >
+            Review and verify the AI-prefilled clinical section for {req.patientName}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/gop/${req.id}`}><ArrowLeft className="size-4" /> Back</Link>
+        </Button>
+      </div>
 
       <DoctorVerification
         request={req}

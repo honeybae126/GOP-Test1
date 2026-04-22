@@ -34,8 +34,8 @@ interface CreateGOPInput {
 interface GOPState {
   requests:        MockGOPRequest[]
   gopQuoteCounter: number   // last-used sequential number for quote numbering
-  setSurgeonVerified:      (id: string, performer: Performer) => void
-  setAnaesthetistVerified: (id: string, performer: Performer) => void
+  setSurgeonVerified:      (id: string, performer: Performer, regNumber?: string) => void
+  setAnaesthetistVerified: (id: string, performer: Performer, regNumber?: string) => void
   setFinanceVerified:      (id: string, performer: Performer) => void
   setStaffFinalised:       (id: string, performer: Performer) => void
   submitToInsurer:         (id: string, performer: Performer) => void
@@ -83,7 +83,7 @@ export const useGopStore = create<GOPState>()(
       requests:        structuredClone(MOCK_GOP_REQUESTS),
       gopQuoteCounter: 9,
 
-      setSurgeonVerified: (id, performer) =>
+      setSurgeonVerified: (id, performer, regNumber?: string) =>
         set((s) => ({
           requests: s.requests.map((r) => {
             if (r.id !== id) return r
@@ -91,13 +91,15 @@ export const useGopStore = create<GOPState>()(
             const updated = {
               ...r,
               surgeonVerified: true,
+              surgeonVerifiedAt: now,
+              surgeonRegistrationNumber: regNumber ?? r.surgeonRegistrationNumber ?? null,
               stageEnteredAt: { ...r.stageEnteredAt, awaiting_anaesthetist: now },
             }
-            return appendAudit(updated, makeEntry('SURGEON_VERIFIED', performer))
+            return appendAudit(updated, makeEntry('SURGEON_VERIFIED', performer, `Registration: ${regNumber ?? 'N/A'}`))
           }),
         })),
 
-      setAnaesthetistVerified: (id, performer) =>
+      setAnaesthetistVerified: (id, performer, regNumber?: string) =>
         set((s) => ({
           requests: s.requests.map((r) => {
             if (r.id !== id) return r
@@ -105,9 +107,11 @@ export const useGopStore = create<GOPState>()(
             const updated = {
               ...r,
               anaesthetistVerified: true,
+              anaesthetistVerifiedAt: now,
+              anaesthetistRegistrationNumber: regNumber ?? r.anaesthetistRegistrationNumber ?? null,
               stageEnteredAt: { ...r.stageEnteredAt, awaiting_finance: now },
             }
-            return appendAudit(updated, makeEntry('ANAESTHETIST_VERIFIED', performer))
+            return appendAudit(updated, makeEntry('ANAESTHETIST_VERIFIED', performer, `Registration: ${regNumber ?? 'N/A'}`))
           }),
         })),
 
@@ -340,15 +344,20 @@ export const useGopStore = create<GOPState>()(
           requests: s.requests.map((r) => {
             if (r.id !== id) return r
             const total = items.reduce((sum, i) => sum + i.netAmount, 0)
+            const isFinance = performer.role === 'FINANCE'
+            const taggedItems = isFinance
+              ? items.map(i => ({ ...i, editedByFinance: true }))
+              : items
             const updated: MockGOPRequest = {
               ...r,
-              lineItems:       items,
+              lineItems:       taggedItems,
               estimatedAmount: +total.toFixed(2),
               updatedAt:       new Date().toISOString(),
             }
+            const action = isFinance ? 'COST_EDITED' : 'COST_UPDATED'
             return appendAudit(
               updated,
-              makeEntry('COST_UPDATED', performer, `Cost estimate updated. New total: $${total.toFixed(2)}`)
+              makeEntry(action, performer, `Cost estimate updated. New total: $${total.toFixed(2)}`)
             )
           }),
         })),
@@ -360,8 +369,9 @@ export const useGopStore = create<GOPState>()(
         const newId       = `gop-appeal-${Date.now()}`
         const now         = new Date().toISOString()
         const today       = now.slice(0, 10)
-        const nextCounter = get().gopQuoteCounter + 1
-        const quoteNumber = generateQuoteNumber(nextCounter)
+        // Appeal quote format: EQyy-nnn-An (original quote # with appeal suffix)
+        const baseQuote   = original.quoteNumber.replace(/-A\d+$/, '') // strip existing appeal suffix
+        const quoteNumber = `${baseQuote}-A${newVersion - 1}`
 
         const initEntry = makeEntry(
           'APPEAL_INITIATED',
@@ -400,7 +410,6 @@ export const useGopStore = create<GOPState>()(
               r.id === rejectedId ? { ...r, hasAppeal: true } : r
             ),
           ],
-          gopQuoteCounter: nextCounter,
         }))
         return newId
       },

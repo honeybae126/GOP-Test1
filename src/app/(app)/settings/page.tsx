@@ -2,21 +2,13 @@
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Settings, User, Bell, Shield, Building2, Sliders } from 'lucide-react'
 import { toast } from 'sonner'
 
-// ── Notification event definitions per role ──────────────────────────────────
-
 const DOCTOR_EVENTS = [
-  { key: 'REQUEST_ASSIGNED',       label: 'Request assigned to you', description: 'When Insurance Staff assigns a GOP request to you.', mandatory: true },
-  { key: 'REQUEST_REASSIGNED',     label: 'Request reassigned',       description: 'When one of your assigned requests is transferred.', mandatory: false },
-  { key: 'REQUEST_EXPIRING_SOON',  label: 'Request expiring soon',    description: '48 hours before an assigned request expires.', mandatory: false },
+  { key: 'REQUEST_ASSIGNED',      label: 'Request assigned to you',  description: 'When Insurance Staff assigns a GOP request to you.', mandatory: true },
+  { key: 'REQUEST_REASSIGNED',    label: 'Request reassigned',        description: 'When one of your assigned requests is transferred.', mandatory: false },
+  { key: 'REQUEST_EXPIRING_SOON', label: 'Request expiring soon',     description: '48 hours before an assigned request expires.', mandatory: false },
 ]
-
 const STAFF_EVENTS = [
   { key: 'REQUEST_CORRECTION_REQUESTED', label: 'Corrections requested', description: 'When a doctor returns a request for corrections.', mandatory: true },
   { key: 'REQUEST_VERIFIED',             label: 'Request verified',       description: 'When a doctor completes verification.', mandatory: true },
@@ -25,7 +17,6 @@ const STAFF_EVENTS = [
   { key: 'REQUEST_EXPIRED',              label: 'Request expired',        description: 'When a submitted request passes its expiry window.', mandatory: true },
   { key: 'REQUEST_EXPIRING_SOON',        label: 'Request expiring soon',  description: '48 hours before a request expires.', mandatory: false },
 ]
-
 const ADMIN_EVENTS = [
   { key: 'REQUEST_CREATED',  label: 'New request created', description: 'When any new GOP request is created.', mandatory: false },
   { key: 'REQUEST_APPROVED', label: 'Request approved',    description: 'Any GOP approval — mandatory for compliance.', mandatory: true },
@@ -34,74 +25,73 @@ const ADMIN_EVENTS = [
   { key: 'USER_CREATED',     label: 'New user created',    description: 'When a new user account is provisioned.', mandatory: false },
 ]
 
-// ── Card primitive ────────────────────────────────────────────────────────────
-
-function SectionCard({ icon, title, sub, children }: {
-  icon: React.ReactNode
-  title: string
-  sub?: string
-  children: React.ReactNode
-}) {
+function SectionCard({ icon, title, sub, children }: { icon: string; title: string; sub?: string; children: React.ReactNode }) {
   return (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: '1px solid var(--border-light)',
-      borderRadius: 'var(--radius-xl)',
-      boxShadow: 'var(--shadow-card)',
-      overflow: 'hidden',
-    }}>
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-light)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {icon}
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-800)' }}>{title}</span>
+    <div className="table-wrapper">
+      <div className="card-header-row">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <i className={icon} style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }} />
+          <div>
+            <div className="card-header-title">{title}</div>
+            {sub && <div className="card-header-sub">{sub}</div>}
+          </div>
         </div>
-        {sub && <p style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 3 }}>{sub}</p>}
       </div>
-      <div style={{ padding: 20 }}>
-        {children}
-      </div>
+      <div style={{ padding: 'var(--spacing-lg)' }}>{children}</div>
     </div>
   )
 }
 
 function KVRow({ label, value, first }: { label: string; value: React.ReactNode; first?: boolean }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '9px 0',
-      borderTop: first ? undefined : '1px solid var(--border-light)',
-      fontSize: 13,
-    }}>
-      <span style={{ color: 'var(--gray-500)' }}>{label}</span>
-      <span style={{ fontWeight: 500, color: 'var(--gray-800)' }}>{value}</span>
+    <div className="kv-row" style={{ borderTop: first ? 'none' : undefined }}>
+      <span className="kv-label">{label}</span>
+      <span className="kv-value">{value}</span>
     </div>
   )
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function Toggle({ checked, disabled, onChange }: { checked: boolean; disabled?: boolean; onChange?: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange?.(!checked)}
+      style={{
+        width: '2.5rem', height: '1.25rem', borderRadius: '9999px', border: 'none',
+        background: checked ? 'var(--primary)' : 'var(--muted)', cursor: disabled ? 'not-allowed' : 'pointer',
+        position: 'relative', transition: 'background var(--transition-base)', flexShrink: 0, opacity: disabled ? 0.6 : 1,
+      }}
+    >
+      <span style={{
+        position: 'absolute', top: '0.125rem',
+        left: checked ? '1.375rem' : '0.125rem',
+        width: '1rem', height: '1rem', borderRadius: '9999px',
+        background: 'white', transition: 'left var(--transition-base)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+      }} />
+    </button>
+  )
+}
 
 export default function SettingsPage() {
   const { data: session } = useSession()
   const user = session?.user
   const role = user?.role ?? ''
 
-  const [displayName, setDisplayName]   = useState(user?.name ?? '')
-  const [specialty, setSpecialty]       = useState('')
-  const [department, setDepartment]     = useState('')
-  const [signatureFile, setSignatureFile] = useState<File | null>(null)
+  const [displayName, setDisplayName]     = useState(user?.name ?? '')
+  const [specialty, setSpecialty]         = useState('')
+  const [department, setDepartment]       = useState('')
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null)
   const [savingProfile, setSavingProfile] = useState(false)
+  const [preferences, setPreferences]     = useState<Record<string, boolean>>({})
+  const [prefLoaded, setPrefLoaded]       = useState(false)
+  const [insurers, setInsurers]           = useState<{ id: string; name: string }[]>([])
+  const [systemConfig, setSystemConfig]   = useState<Record<string, string>>({})
 
-  const [preferences, setPreferences] = useState<Record<string, boolean>>({})
-  const [prefLoaded, setPrefLoaded]   = useState(false)
-
-  const [insurers, setInsurers]         = useState<{ id: string; name: string }[]>([])
-  const [systemConfig, setSystemConfig] = useState<Record<string, string>>({})
-
-  const events =
-    role === 'DOCTOR'  ? DOCTOR_EVENTS :
-    role === 'IT_ADMIN' ? ADMIN_EVENTS :
-    STAFF_EVENTS
+  const events = role === 'DOCTOR' ? DOCTOR_EVENTS : role === 'IT_ADMIN' ? ADMIN_EVENTS : STAFF_EVENTS
 
   useEffect(() => {
     fetch('/api/notifications/preferences')
@@ -119,20 +109,20 @@ export default function SettingsPage() {
   useEffect(() => {
     if (role === 'IT_ADMIN') {
       fetch('/api/insurers').then(r => r.ok ? r.json() : []).then(setInsurers).catch(() => {})
-      fetch('/api/system-config').then(r => r.ok ? r.json() : []).then((rows: { key: string; value: unknown }[]) => {
-        const map: Record<string, string> = {}
-        rows.forEach(r => { map[r.key] = String(r.value) })
-        setSystemConfig(map)
-      }).catch(() => {})
+      fetch('/api/system-config').then(r => r.ok ? r.json() : [])
+        .then((rows: { key: string; value: unknown }[]) => {
+          const map: Record<string, string> = {}
+          rows.forEach(r => { map[r.key] = String(r.value) })
+          setSystemConfig(map)
+        }).catch(() => {})
     }
   }, [role])
 
   const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!file.type.includes('png')) { toast.error('Only PNG files are accepted for digital signatures.'); return }
+    if (!file.type.includes('png')) { toast.error('Only PNG files are accepted.'); return }
     if (file.size > 500 * 1024) { toast.error('Signature file must be under 500 KB.'); return }
-    setSignatureFile(file)
     setSignaturePreview(URL.createObjectURL(file))
   }
 
@@ -165,56 +155,51 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      {/* Page header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--gray-800)', lineHeight: 1 }}>Settings</h1>
-        <p style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 4 }}>
-          Manage your account and system preferences.
-        </p>
+    <div className="page-container">
+      <div className="dashboard-header">
+        <div>
+          <h1 className="header-title">Settings</h1>
+          <p className="header-subtitle">Manage your account and system preferences.</p>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 680 }}>
+      <div style={{ padding: 'var(--spacing-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)', maxWidth: 700 }}>
 
         {/* Profile */}
-        <SectionCard
-          icon={<User style={{ width: 15, height: 15, color: 'var(--gray-400)' }} />}
-          title="Profile"
-          sub="Your account information."
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div className="space-y-1.5">
-              <Label htmlFor="display-name">Display name</Label>
-              <Input id="display-name" value={displayName} onChange={e => setDisplayName(e.target.value)} maxLength={80} />
+        <SectionCard icon="fas fa-user" title="Profile" sub="Your account information.">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">Display name</label>
+              <input
+                className="form-input"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                maxLength={80}
+              />
             </div>
             <KVRow first label="Email" value={user?.email ?? '—'} />
             <KVRow label="Role" value={
-              <span style={{
-                fontSize: 11, fontWeight: 500, padding: '2px 8px',
-                borderRadius: 'var(--radius-full)',
-                background: 'var(--blue-50)', color: 'var(--blue-700)',
-                border: '1px solid var(--blue-200)',
-              }}>{role}</span>
+              <span className="badge badge-submitted">{role}</span>
             } />
 
             {role === 'DOCTOR' && (
               <>
-                <div style={{ height: 1, background: 'var(--border-light)' }} />
-                <div className="space-y-1.5">
-                  <Label htmlFor="specialty">Specialty</Label>
-                  <Input id="specialty" value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder="e.g. Cardiology" maxLength={80} />
+                <div style={{ height: 1, background: 'var(--border)' }} />
+                <div className="form-group">
+                  <label className="form-label">Specialty</label>
+                  <input className="form-input" value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder="e.g. Cardiology" maxLength={80} />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="department">Department</Label>
-                  <Input id="department" value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Ward 3A" maxLength={80} />
+                <div className="form-group">
+                  <label className="form-label">Department</label>
+                  <input className="form-input" value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Ward 3A" maxLength={80} />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Digital signature</Label>
-                  <p style={{ fontSize: 11, color: 'var(--gray-400)' }}>PNG only · max 500 KB · embedded in verified GOP PDFs.</p>
-                  <Input type="file" accept=".png" onChange={handleSignatureChange} className="cursor-pointer" />
+                <div className="form-group">
+                  <label className="form-label">Digital signature</label>
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)' }}>PNG only · max 500 KB · embedded in verified GOP PDFs.</p>
+                  <input type="file" accept=".png" onChange={handleSignatureChange} className="form-input" style={{ padding: '0.375rem' }} />
                   {signaturePreview && (
-                    <div style={{ marginTop: 8, border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: 12, background: '#fff' }}>
-                      <p style={{ fontSize: 11, color: 'var(--gray-400)', marginBottom: 6 }}>Preview</p>
+                    <div style={{ marginTop: 8, border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.75rem', background: 'var(--card)' }}>
+                      <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)', marginBottom: 6 }}>Preview</p>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={signaturePreview} alt="Signature preview" style={{ maxHeight: 64, objectFit: 'contain' }} />
                     </div>
@@ -223,42 +208,40 @@ export default function SettingsPage() {
               </>
             )}
 
-            <Button onClick={handleSaveProfile} disabled={savingProfile} size="sm" style={{ alignSelf: 'flex-start' }}>
+            <button
+              onClick={handleSaveProfile}
+              disabled={savingProfile}
+              className="btn btn-primary btn-sm"
+              style={{ alignSelf: 'flex-start' }}
+            >
+              <i className="fas fa-save" />
               {savingProfile ? 'Saving…' : 'Save profile'}
-            </Button>
+            </button>
           </div>
         </SectionCard>
 
         {/* Notifications */}
-        <SectionCard
-          icon={<Bell style={{ width: 15, height: 15, color: 'var(--gray-400)' }} />}
-          title="Notifications"
-          sub="Choose which events trigger in-app notifications."
-        >
-          {!prefLoaded && <p style={{ fontSize: 13, color: 'var(--gray-400)' }}>Loading preferences…</p>}
+        <SectionCard icon="fas fa-bell" title="Notifications" sub="Choose which events trigger in-app notifications.">
+          {!prefLoaded && <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--muted-foreground)' }}>Loading preferences…</p>}
           {prefLoaded && events.map((event, i) => (
-            <div key={event.key} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-              padding: '12px 0',
-              borderTop: i > 0 ? '1px solid var(--border-light)' : undefined,
-            }}>
+            <div
+              key={event.key}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
+                padding: '0.75rem 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+              }}
+            >
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-800)' }}>{event.label}</span>
-                  {event.mandatory && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 500, padding: '1px 6px',
-                      borderRadius: 'var(--radius-full)',
-                      background: 'var(--gray-100)', color: 'var(--gray-500)',
-                    }}>Required</span>
-                  )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.125rem' }}>
+                  <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--foreground)' }}>{event.label}</span>
+                  {event.mandatory && <span className="badge badge-draft" style={{ fontSize: '0.625rem' }}>Required</span>}
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--gray-400)' }}>{event.description}</p>
+                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)' }}>{event.description}</p>
               </div>
-              <Switch
+              <Toggle
                 checked={event.mandatory ? true : (preferences[event.key] ?? true)}
                 disabled={event.mandatory}
-                onCheckedChange={(checked) => !event.mandatory && handleToggle(event.key, checked)}
+                onChange={(v) => !event.mandatory && handleToggle(event.key, v)}
               />
             </div>
           ))}
@@ -266,37 +249,22 @@ export default function SettingsPage() {
 
         {/* Admin: Insurer Config */}
         {role === 'IT_ADMIN' && (
-          <SectionCard
-            icon={<Building2 style={{ width: 15, height: 15, color: 'var(--gray-400)' }} />}
-            title="Insurer Configuration"
-            sub="Active insurers configured in the system."
-          >
-            {insurers.length === 0 && <p style={{ fontSize: 13, color: 'var(--gray-400)' }}>No insurers configured yet.</p>}
-            {insurers.map((ins, i) => (
-              <div key={ins.id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '9px 0', fontSize: 13,
-                borderTop: i > 0 ? '1px solid var(--border-light)' : undefined,
-              }}>
-                <span style={{ fontWeight: 500, color: 'var(--gray-800)' }}>{ins.name}</span>
-                <span style={{
-                  fontSize: 10, fontWeight: 500, padding: '2px 7px',
-                  borderRadius: 'var(--radius-full)',
-                  background: 'var(--gray-100)', color: 'var(--gray-500)',
-                  border: '1px solid var(--border-medium)',
-                }}>Edit — Phase 2</span>
-              </div>
-            ))}
+          <SectionCard icon="fas fa-building" title="Insurer Configuration" sub="Active insurers configured in the system.">
+            {insurers.length === 0
+              ? <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--muted-foreground)' }}>No insurers configured yet.</p>
+              : insurers.map((ins, i) => (
+                <div key={ins.id} className="kv-row" style={{ borderTop: i > 0 ? undefined : 'none' }}>
+                  <span className="kv-value">{ins.name}</span>
+                  <span className="badge badge-routine" style={{ fontSize: '0.625rem' }}>Edit — Phase 2</span>
+                </div>
+              ))
+            }
           </SectionCard>
         )}
 
         {/* Admin: System Defaults */}
         {role === 'IT_ADMIN' && (
-          <SectionCard
-            icon={<Sliders style={{ width: 15, height: 15, color: 'var(--gray-400)' }} />}
-            title="System Defaults"
-            sub="Global configuration values. Edit via database in Phase 2."
-          >
+          <SectionCard icon="fas fa-sliders-h" title="System Defaults" sub="Global configuration values. Edit via database in Phase 2.">
             <KVRow first label="Request expiry window" value={`${systemConfig['request_expiry_days'] ?? '30'} days`} />
             <KVRow label="PDF footer text" value={systemConfig['pdf_footer_text'] ?? '—'} />
             <KVRow label="Audit log retention" value={`${systemConfig['audit_log_retention_days'] ?? '730'} days`} />
@@ -304,10 +272,7 @@ export default function SettingsPage() {
         )}
 
         {/* System info */}
-        <SectionCard
-          icon={<Shield style={{ width: 15, height: 15, color: 'var(--gray-400)' }} />}
-          title="System"
-        >
+        <SectionCard icon="fas fa-shield-alt" title="System">
           <KVRow first label="Version" value="Phase 1 — MVP" />
           <KVRow label="Hospital" value="Intercare Hospital" />
         </SectionCard>

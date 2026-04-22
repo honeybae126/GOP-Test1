@@ -231,8 +231,8 @@ export function GOPLivePanel({
             return (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Stage</span>
-                <span className={`flex items-center gap-1.5 text-xs font-medium ${s.text}`}>
-                  <span className={`size-1.5 rounded-full ${s.dot} shrink-0`} />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 600, color: s.color }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
                   {subStatus}
                 </span>
               </div>

@@ -1,11 +1,20 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Poppins } from 'next/font/google'
 import { AuthProvider } from '@/components/providers'
-import { cn } from '@/lib/utils'
 import './globals.css'
-import { Toaster } from 'sonner'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'GOP Automation System | Intercare Hospital',
@@ -14,11 +23,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={cn('min-h-screen bg-[var(--bg-base)] antialiased', inter.className)}>
+    <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
+        />
+      </head>
+      <body style={{ fontFamily: 'var(--font-inter, Inter, sans-serif)' }}>
         <AuthProvider>
           {children}
-          <Toaster richColors position="bottom-right" />
         </AuthProvider>
       </body>
     </html>

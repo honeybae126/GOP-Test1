@@ -16,19 +16,19 @@ export function PageHeader({ title, description, children, className }: PageHead
         height: 60,
         background: 'var(--bg-base)',
         borderBottom: '1px solid var(--border-light)',
-        padding: '0 24px',
+        padding: 0,
       }}
     >
       <div>
-        <h1 style={{ fontSize: 18, fontWeight: 600, color: 'var(--gray-800)', lineHeight: 1 }}>
+        <h1 style={{ fontSize: 'var(--font-size-lg)', fontWeight: 700, color: 'var(--foreground)', lineHeight: 1.2, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
           {title}
         </h1>
         {description && (
-          <p style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 4 }}>{description}</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginTop: 4 }}>{description}</p>
         )}
       </div>
       {children && (
-        <div className="flex items-center gap-[12px]">
+        <div className="flex items-center gap-3">
           {children}
         </div>
       )}

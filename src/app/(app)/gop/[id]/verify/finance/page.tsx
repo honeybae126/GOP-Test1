@@ -87,27 +87,22 @@ export default function FinanceVerificationPage() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 800 }}>
+    <div className="p-6 space-y-6 max-w-2xl">
       <EditLockBanner conflictName={conflictName} dismissed={dismissed} dismiss={dismiss} />
 
       {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div className="flex items-start justify-between">
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--gray-800)', lineHeight: 1 }}>Finance Review</h1>
-          <p style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 4 }}>
+          <h1 className="text-h1">Finance Review</h1>
+          <p className="text-body mt-1.5" >
             Step 3 — Cost review for {req.patientName}
           </p>
         </div>
-        <Link href={`/gop/${id}`} style={{ textDecoration: 'none' }}>
-          <button style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '8px 14px', border: '1px solid var(--border-medium)',
-            borderRadius: 'var(--radius-md)', background: 'var(--bg-card)',
-            fontSize: 13, fontWeight: 500, color: 'var(--gray-700)', cursor: 'pointer',
-          }}>
-            <ArrowLeft style={{ width: 14, height: 14 }} /> Back
-          </button>
-        </Link>
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/gop/${id}`}>
+            <ArrowLeft className="size-4" /> Back
+          </Link>
+        </Button>
       </div>
 
       {/* Progress steps */}
@@ -118,7 +113,6 @@ export default function FinanceVerificationPage() {
         borderRadius: 'var(--radius-xl)',
         boxShadow: 'var(--shadow-card)',
         padding: '14px 20px',
-        marginBottom: 20,
       }}>
         {[
           { step: 1, label: 'Surgeon', done: surgeonDone },
@@ -128,7 +122,7 @@ export default function FinanceVerificationPage() {
           <div key={s.step} style={{ display: 'flex', alignItems: 'center', flex: i < 2 ? 1 : 0, gap: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
               {s.done ? (
-                <CheckCircle style={{ width: 20, height: 20, color: '#1A9E4A' }} />
+                <CheckCircle style={{ width: 20, height: 20, color: 'var(--success)' }} />
               ) : (
                 <div style={{
                   width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
@@ -142,7 +136,7 @@ export default function FinanceVerificationPage() {
               )}
               <span style={{
                 fontSize: 13, fontWeight: s.active ? 600 : 400,
-                color: s.done ? '#1A9E4A' : s.active ? 'var(--blue-600)' : 'var(--gray-400)',
+                color: s.done ? 'var(--success)' : s.active ? 'var(--blue-600)' : 'var(--gray-400)',
               }}>
                 {s.label}
               </span>
@@ -150,7 +144,7 @@ export default function FinanceVerificationPage() {
             {i < 2 && (
               <div style={{
                 flex: 1, height: 1, margin: '0 12px',
-                background: s.done ? '#1A9E4A' : 'var(--border-light)',
+                background: s.done ? 'var(--success)' : 'var(--border-light)',
               }} />
             )}
           </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import Link from 'next/link'
 import { useGopStore } from '@/lib/gop-store'
 import { Button } from '@/components/ui/button'
@@ -38,7 +39,7 @@ export default function FinanceVerificationPage() {
   const setFinanceVerified = useGopStore((s) => s.setFinanceVerified)
   const updateLineItems    = useGopStore((s) => s.updateLineItems)
 
-  const role             = session?.user?.role ?? ''
+  const role             = useActiveRole()
   const isFinance        = role === 'FINANCE'
   const isInsuranceStaff = role === 'INSURANCE_STAFF'
   const isITAdmin        = role === 'IT_ADMIN'

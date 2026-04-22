@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import Link from 'next/link'
 import { useGopStore } from '@/lib/gop-store'
 import { Button } from '@/components/ui/button'
@@ -243,7 +244,7 @@ export default function SurgeonVerificationPage() {
   const req = useGopStore((s) => s.requests.find((r) => r.id === id))
   const { setSurgeonVerified, logFieldCorrection } = useGopStore()
 
-  const role = session?.user?.role ?? ''
+  const role = useActiveRole()
 
   useEffect(() => {
     if (!role) return
@@ -319,7 +320,7 @@ export default function SurgeonVerificationPage() {
     setSubmitting(true)
     await new Promise(r => setTimeout(r, 600))
 
-    const performer = { name: session?.user?.name ?? surgeonName, role: session?.user?.role ?? 'DOCTOR' }
+    const performer = { name: session?.user?.name ?? surgeonName, role: role || 'DOCTOR' }
 
     fields.forEach(f => {
       if (f.status === 'corrected') {

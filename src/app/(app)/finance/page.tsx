@@ -1,20 +1,22 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { useGopStore } from '@/lib/gop-store'
 
 export default function FinancePage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
+  const role = useActiveRole()
   const router = useRouter()
   const allRequests = useGopStore(s => s.requests)
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.replace('/auth/signin'); return }
-    if (status === 'authenticated' && session?.user?.role === 'DOCTOR') router.replace('/dashboard/doctor')
-  }, [status, session, router])
+    if (status === 'authenticated' && role === 'DOCTOR') router.replace('/dashboard/doctor')
+  }, [status, role, router])
 
   if (status === 'loading') return null
 

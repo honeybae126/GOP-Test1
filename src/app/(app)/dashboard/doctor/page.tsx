@@ -1,6 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -60,14 +61,15 @@ interface VerifyCard {
 
 export default function DoctorDashboardPage() {
   const { data: session, status } = useSession()
+  const role = useActiveRole()
   const router = useRouter()
   const requests = useGopStore(s => s.requests)
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
     if (status === 'unauthenticated') { router.replace('/'); return }
-    if (status === 'authenticated' && session?.user?.role !== 'DOCTOR') router.replace('/')
-  }, [status, session, router])
+    if (status === 'authenticated' && role !== 'DOCTOR') router.replace('/')
+  }, [status, role, router])
 
   // Tick every 60s so SLA countdowns update
   useEffect(() => {

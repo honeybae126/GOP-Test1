@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import { useGopStore } from '@/lib/gop-store'
 import { Button } from '@/components/ui/button'
 import { DoctorVerification } from '@/components/gop/doctor-verification'
@@ -23,7 +24,7 @@ export default function DoctorVerificationPage() {
   const { data: session } = useSession()
   const req = useGopStore((s) => s.requests.find((r) => r.id === id))
 
-  const role = session?.user?.role ?? ''
+  const role = useActiveRole()
 
   // Insurance Staff don't have this feature — send them back silently
   useEffect(() => {

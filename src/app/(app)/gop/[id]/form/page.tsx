@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import { useGopStore } from '@/lib/gop-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,7 +30,7 @@ export default function GOPFormPage() {
   const setPricingType   = useGopStore((s) => s.setPricingType)
   const setMarketingPackage = useGopStore((s) => s.setMarketingPackage)
 
-  const role     = session?.user?.role ?? ''
+  const role     = useActiveRole()
   const isStaff  = role === 'INSURANCE_STAFF' || role === 'IT_ADMIN'
   const canEdit  = isStaff && req?.status === 'DRAFT'
 

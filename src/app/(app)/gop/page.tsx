@@ -1,6 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import { useMemo } from 'react'
 import { useGopStore } from '@/lib/gop-store'
 import { GOPRequestsTable } from '@/components/gop/gop-requests-table'
@@ -10,7 +11,7 @@ export default function GOPRequestsPage() {
   const { data: session } = useSession()
   const allRequests = useGopStore((s) => s.requests) ?? []
 
-  const role     = session?.user?.role ?? ''
+  const role     = useActiveRole()
   const userName = session?.user?.name ?? ''
   const isDoctor = role === 'DOCTOR'
   const isStaff  = role === 'INSURANCE_STAFF' || role === 'IT_ADMIN'

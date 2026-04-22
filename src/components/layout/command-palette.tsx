@@ -8,6 +8,7 @@ import {
   ArrowRight, Command,
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 
 /* ── Context ─────────────────────────────────────────────── */
 interface CmdCtx { open: () => void; close: () => void }
@@ -72,7 +73,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
 function CommandPalette({ onClose }: { onClose: () => void }) {
   const router = useRouter()
   const { data: session } = useSession()
-  const role = session?.user?.role ?? ''
+  const role = useActiveRole()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)

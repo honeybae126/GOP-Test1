@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
+import { DemoRoleSwitcher } from '@/components/demo-role-switcher'
 
 export function getRoleLabel(role: string) {
   switch (role) {
@@ -47,7 +49,8 @@ interface SidebarProps {
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
-  const role = user.role || ''
+  const activeRole = useActiveRole()
+  const role = activeRole || user.role || ''
 
   const visibleMain  = NAV_MAIN.filter(item => !item.roles || item.roles.includes(role))
   const visibleAdmin = NAV_ADMIN.filter(item => !item.roles || item.roles.includes(role))
@@ -116,6 +119,7 @@ export function Sidebar({ user }: SidebarProps) {
 
       {/* User / sign-out */}
       <div className="sidebar-bottom">
+        <DemoRoleSwitcher />
         <button
           className="sidebar-user"
           onClick={() => signOut({ callbackUrl: '/auth/signin' })}

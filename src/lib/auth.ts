@@ -1,126 +1,87 @@
 import NextAuth from 'next-auth'
-import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id'
 import Credentials from 'next-auth/providers/credentials'
-import type { DefaultSession } from 'next-auth'
-import { DEFAULT_GROUP_MAPPING, getRoleFromGroups } from './sso-config'
 
-// ── NextAuth type augmentation ────────────────────────────────────────────────
+const ROLE_PRIORITY = ['IT_ADMIN', 'INSURANCE_STAFF', 'DOCTOR', 'FINANCE']
 
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string
-      role: string
-      accessDenied?: boolean
-    } & DefaultSession['user']
-  }
-
+const DEMO_USERS: Record<string, { name: string; role: string }> = {
+  'staff@intercare.com':   { name: 'Demo Staff',         role: 'INSURANCE_STAFF' },
+  'doctor@intercare.com':  { name: 'Dr. Sarah Mitchell', role: 'DOCTOR'          },
+  'finance@intercare.com': { name: 'Demo Finance',       role: 'FINANCE'         },
+  'admin@intercare.com':   { name: 'Demo Admin',         role: 'IT_ADMIN'        },
 }
-
-declare module '@auth/core/jwt' {
-  interface JWT {
-    role?: string | null
-    accessDenied?: boolean
-  }
-}
-
-// ── Graph API helper ──────────────────────────────────────────────────────────
-
-async function fetchUserGroups(accessToken: string): Promise<string[]> {
-  try {
-    const res = await fetch('https://graph.microsoft.com/v1.0/me/memberOf', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-    if (!res.ok) return []
-    const data = await res.json()
-    return (data.value ?? [])
-      .map((g: { displayName?: string }) => g.displayName)
-      .filter(Boolean) as string[]
-  } catch {
-    return []
-  }
-}
-
-// ── NextAuth config ───────────────────────────────────────────────────────────
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
-    // ── Microsoft Entra ID (primary, production path) ─────────────────────
-    MicrosoftEntraID({
-      clientId:     process.env.ENTRA_ID_CLIENT_ID,
-      clientSecret: process.env.ENTRA_ID_CLIENT_SECRET,
-      // @ts-expect-error tenantId not in OIDCUserConfig typedefs but accepted at runtime
-      tenantId:     process.env.ENTRA_ID_TENANT_ID,
+    {
+      id: 'microsoft-entra-id',
+      name: 'Microsoft',
+      type: 'oidc',
+      issuer: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/v2.0`,
+      clientId:     process.env.AZURE_AD_CLIENT_ID!,
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+      wellKnown: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/v2.0/.well-known/openid-configuration`,
       authorization: {
+        url: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/oauth2/v2.0/authorize`,
         params: {
-          scope:
-            'openid profile email https://graph.microsoft.com/GroupMember.Read.All',
+          scope: 'openid profile email User.Read',
         },
       },
-    }),
-
-    // ── Credentials (demo / development only) ─────────────────────────────
-    Credentials({
-      credentials: { email: {}, password: {} },
-      async authorize(credentials) {
-        const demos: Record<string, { id: string; name: string; role: string }> = {
-          'staff@intercare.com':   { id: 'mock-staff-id',   name: 'Insurance Staff',   role: 'INSURANCE_STAFF' },
-          'finance@intercare.com': { id: 'mock-finance-id', name: 'Finance Officer',   role: 'FINANCE'         },
-          'doctor@intercare.com':  { id: 'mock-doctor-id',  name: 'Dr. Sok Phearith', role: 'DOCTOR'          },
-          'admin@intercare.com':   { id: 'mock-admin-id',   name: 'IT Administrator', role: 'IT_ADMIN'         },
+      token: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/oauth2/v2.0/token`,
+      userinfo: 'https://graph.microsoft.com/oidc/userinfo',
+      profile(profile: any) {
+        return {
+          id:    profile.sub,
+          name:  profile.name,
+          email: profile.email ?? profile.preferred_username,
+          image: null,
+          roles: profile.roles ?? [],
         }
-        const email    = credentials?.email    as string
-        const password = credentials?.password as string
-        if (password === 'gop123' && demos[email]) {
-          return { ...demos[email], email }
-        }
-        return null
       },
-    }),
+    },
+    ...(process.env.DEMO_AUTH_ENABLED === 'true' ? [
+      Credentials({
+        name: 'Demo Credentials',
+        credentials: {
+          email:    { label: 'Email',    type: 'email'    },
+          password: { label: 'Password', type: 'password' },
+        },
+        async authorize(credentials) {
+          const email    = credentials?.email as string
+          const password = credentials?.password as string
+          if (password !== 'gop123') return null
+          const user = DEMO_USERS[email]
+          if (!user) return null
+          return { id: email, email, name: user.name, role: user.role }
+        },
+      })
+    ] : []),
   ],
 
-  session: { strategy: 'jwt' },
-
   callbacks: {
-    async jwt({ token, user, account }) {
-      // Credentials provider — role is already on the user object
-      if (user?.role) {
-        token.role = user.role
+    async jwt({ token, account, profile, user }) {
+      if (account?.provider === 'microsoft-entra-id') {
+        const roles: string[] = (profile as any)?.roles ?? []
+        const role = ROLE_PRIORITY.find(r => roles.includes(r))
+        token.role = role ?? 'NO_ROLE'
+        token.name = (profile as any)?.name ?? token.name
       }
-
-      // Microsoft Entra ID — call Graph API to resolve group → role
-      if (account?.provider === 'microsoft-entra-id' && account.access_token) {
-        const groups = await fetchUserGroups(account.access_token as string)
-        // TODO Phase 2: load mapping from DB via API instead of DEFAULT_GROUP_MAPPING
-        const role = getRoleFromGroups(groups, DEFAULT_GROUP_MAPPING)
-        if (role) {
-          token.role         = role
-          token.accessDenied = false
-        } else {
-          token.role         = null
-          token.accessDenied = true
-        }
+      if (user && (user as any).role) {
+        token.role = (user as any).role
       }
-
       return token
     },
 
-    session({ session, token }) {
-      if (token) {
-        session.user.id           = token.sub as string
-        session.user.role         = (token.role ?? '') as string
-        session.user.email        = token.email as string
-        session.user.name         = token.name  as string
-        session.user.accessDenied = token.accessDenied
-      }
+    async session({ session, token }) {
+      session.user.role = token.role as string
+      session.user.id   = token.sub ?? ''
       return session
-    },
-
-    signIn() {
-      // Access-denied redirect handled in middleware via req.auth.user.accessDenied
-      return true
     },
   },
 
-  pages: { signIn: '/auth/signin' },
+  pages: {
+    signIn: '/auth/signin',
+    error:  '/auth/error',
+  },
+
+  session: { strategy: 'jwt' },
 })

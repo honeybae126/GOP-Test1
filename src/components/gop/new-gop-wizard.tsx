@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
@@ -134,6 +135,7 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
   const createGOPRequest = useGopStore((s) => s.createGOPRequest)
   const router = useRouter()
   const { data: session } = useSession()
+  const activeRole = useActiveRole()
 
   const coverageMap = useMemo(() => {
     const map: Record<string, MockCoverage> = {}
@@ -783,7 +785,7 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
                   assignedSurgeon: selectedEncounter?.participant[0]?.individual.display ?? null,
                   estimatedAmount: selectedEstimate?.total ?? 0,
                   createdBy:       session?.user?.name ?? 'Insurance Staff',
-                  createdByRole:   session?.user?.role ?? 'INSURANCE_STAFF',
+                  createdByRole:   activeRole || 'INSURANCE_STAFF',
                   priority,
                 })
                 setCreatedGopId(newId)

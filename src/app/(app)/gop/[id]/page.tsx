@@ -2,6 +2,7 @@
 
 import { useParams, notFound, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useGopStore } from '@/lib/gop-store'
@@ -366,7 +367,7 @@ export default function GOPDetailPage() {
   const encounter    = getEncounterById(req.encounterId)
   const prefillAnswers = MOCK_PREFILL_RESPONSE[req.id] ?? []
 
-  const role             = session?.user?.role ?? ''
+  const role             = useActiveRole()
   const userName         = session?.user?.name ?? ''
   const isDoctor         = role === 'DOCTOR'
   const isInsuranceStaff = role === 'INSURANCE_STAFF'

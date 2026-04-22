@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Poppins } from 'next/font/google'
-import { AuthProvider } from '@/components/providers'
+import { SessionProvider } from 'next-auth/react'
+import { auth } from '@/lib/auth'
 import './globals.css'
 
 const inter = Inter({
@@ -21,7 +22,13 @@ export const metadata: Metadata = {
   description: 'Guarantee of Payment pre-authorisation workflow — Phase 1',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const session = await auth()
+
   return (
     <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
       <head>
@@ -33,10 +40,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body style={{ fontFamily: 'var(--font-inter, Inter, sans-serif)' }}>
-        <AuthProvider>
+        <SessionProvider session={session}>
           {children}
-        </AuthProvider>
+        </SessionProvider>
       </body>
     </html>
   )
 }
+

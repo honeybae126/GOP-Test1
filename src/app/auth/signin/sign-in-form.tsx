@@ -10,7 +10,7 @@ const DEMO_USERS = [
   { email: 'admin@intercare.com',   password: 'gop123', name: 'IT Admin',         role: 'IT Admin',        color: '#FFF7ED', textColor: '#9A3412', icon: 'fas fa-user-shield' },
 ]
 
-export function SignInForm({ ssoConfigured }: { ssoConfigured: boolean }) {
+export function SignInForm({ ssoConfigured, demoEnabled }: { ssoConfigured: boolean; demoEnabled: boolean }) {
   const [loading, setLoading]       = useState<string | null>(null)
   const [error, setError]           = useState('')
   const [demoOpen, setDemoOpen]     = useState(false)
@@ -74,46 +74,50 @@ export function SignInForm({ ssoConfigured }: { ssoConfigured: boolean }) {
         </p>
       )}
 
-      <div className="auth-divider">or use demo account</div>
+      {demoEnabled && (
+        <>
+          <div className="auth-divider">or use demo account</div>
 
-      {/* Demo toggle */}
-      <button
-        type="button"
-        onClick={() => setDemoOpen(o => !o)}
-        className="btn btn-ghost btn-full btn-ghost-dashed justify-between"
-        style={{ marginBottom: demoOpen ? 'var(--spacing-md)' : 0 }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <i className="fas fa-flask" />
-          Demo mode only — not for production use
-        </span>
-        <i className={`fas fa-chevron-${demoOpen ? 'up' : 'down'}`} style={{ fontSize: '0.75rem' }} />
-      </button>
+          {/* Demo toggle */}
+          <button
+            type="button"
+            onClick={() => setDemoOpen(o => !o)}
+            className="btn btn-ghost btn-full btn-ghost-dashed justify-between"
+            style={{ marginBottom: demoOpen ? 'var(--spacing-md)' : 0 }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <i className="fas fa-flask" />
+              Demo mode only — not for production use
+            </span>
+            <i className={`fas fa-chevron-${demoOpen ? 'up' : 'down'}`} style={{ fontSize: '0.75rem' }} />
+          </button>
 
-      {demoOpen && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {DEMO_USERS.map(u => (
-            <button
-              key={u.email}
-              onClick={() => handleDemoLogin(u)}
-              disabled={!!loading}
-              className="demo-card"
-            >
-              {loading === u.email ? (
-                <i className="fas fa-spinner fa-spin demo-card-icon" />
-              ) : (
-                <div className="demo-card-avatar" style={{ background: u.color, color: u.textColor }}>
-                  <i className={u.icon} />
-                </div>
-              )}
-              <div>
-                <div className="font-semibold text-foreground text-sm">{u.name}</div>
-                <div className="text-xs text-muted-foreground">{u.email}</div>
-              </div>
-              <i className="fas fa-arrow-right ml-auto text-xs text-muted-foreground" />
-            </button>
-          ))}
-        </div>
+          {demoOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {DEMO_USERS.map(u => (
+                <button
+                  key={u.email}
+                  onClick={() => handleDemoLogin(u)}
+                  disabled={!!loading}
+                  className="demo-card"
+                >
+                  {loading === u.email ? (
+                    <i className="fas fa-spinner fa-spin demo-card-icon" />
+                  ) : (
+                    <div className="demo-card-avatar" style={{ background: u.color, color: u.textColor }}>
+                      <i className={u.icon} />
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-semibold text-foreground text-sm">{u.name}</div>
+                    <div className="text-xs text-muted-foreground">{u.email}</div>
+                  </div>
+                  <i className="fas fa-arrow-right ml-auto text-xs text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
 {error && (

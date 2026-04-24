@@ -84,7 +84,6 @@ export default function SettingsPage() {
   const [displayName, setDisplayName]     = useState(user?.name ?? '')
   const [specialty, setSpecialty]         = useState('')
   const [department, setDepartment]       = useState('')
-  const [signaturePreview, setSignaturePreview] = useState<string | null>(null)
   const [savingProfile, setSavingProfile] = useState(false)
   const [preferences, setPreferences]     = useState<Record<string, boolean>>({})
   const [prefLoaded, setPrefLoaded]       = useState(false)
@@ -117,14 +116,6 @@ export default function SettingsPage() {
         }).catch(() => {})
     }
   }, [role])
-
-  const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.includes('png')) { toast.error('Only PNG files are accepted.'); return }
-    if (file.size > 500 * 1024) { toast.error('Signature file must be under 500 KB.'); return }
-    setSignaturePreview(URL.createObjectURL(file))
-  }
 
   const handleSaveProfile = async () => {
     setSavingProfile(true)
@@ -193,17 +184,15 @@ export default function SettingsPage() {
                   <label className="form-label">Department</label>
                   <input className="form-input" value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Ward 3A" maxLength={80} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Digital signature</label>
-                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)' }}>PNG only · max 500 KB · embedded in verified GOP PDFs.</p>
-                  <input type="file" accept=".png" onChange={handleSignatureChange} className="form-input" style={{ padding: '0.375rem' }} />
-                  {signaturePreview && (
-                    <div style={{ marginTop: 8, border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.75rem', background: 'var(--card)' }}>
-                      <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)', marginBottom: 6 }}>Preview</p>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={signaturePreview} alt="Signature preview" style={{ maxHeight: 64, objectFit: 'contain' }} />
-                    </div>
-                  )}
+                <div style={{ padding: '0.75rem', background: 'var(--gray-50)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <i className="fas fa-signature" style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }} />
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Digital Signature</span>
+                  </div>
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)' }}>
+                    Your signature is stored in the Hospital Information System and is applied automatically when generating verified GOP PDFs.
+                    If your signature is missing or needs to be updated, please contact your IT Admin.
+                  </p>
                 </div>
               </>
             )}

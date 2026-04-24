@@ -279,6 +279,18 @@ export default function AnaesthetistVerificationPage() {
   const [submitting, setSubmitting]     = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
 
+  // Signature check — does not block verification, only PDF Type 2
+  const [sigStatus, setSigStatus] = useState<'checking' | 'found' | 'missing' | 'offline'>('checking')
+  useEffect(() => {
+    fetch('/api/his/signature')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || data.offline) setSigStatus('offline')
+        else setSigStatus(data.hasSignature ? 'found' : 'missing')
+      })
+      .catch(() => setSigStatus('offline'))
+  }, [])
+
   const patient        = req ? getPatientById(req.patientId) : null
   const surgeonDone    = req?.surgeonVerified ?? false
   const alreadyVerified = req?.anaesthetistVerified ?? false
@@ -333,6 +345,23 @@ export default function AnaesthetistVerificationPage() {
   return (
     <div className="p-6 space-y-6 max-w-2xl">
       <EditLockBanner conflictName={conflictName} dismissed={dismissed} dismiss={dismiss} />
+
+      {/* Signature warning — missing signature does NOT block verification, only PDF Type 2 */}
+      {sigStatus === 'missing' && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          padding: '0.75rem 1rem', borderRadius: 'var(--radius-lg)',
+          background: '#FEF3C7', border: '1px solid #FDE68A',
+        }}>
+          <i className="fas fa-exclamation-triangle" style={{ color: '#D97706', fontSize: '0.875rem', marginTop: 2, flexShrink: 0 }} />
+          <div>
+            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#92400E' }}>No signature on file — please contact Admin</p>
+            <p style={{ fontSize: '0.8125rem', color: '#92400E', marginTop: 2 }}>
+              You can complete verification, but PDF Type 2 (with embedded signature) cannot be generated until your signature is registered in the HIS.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Page header */}
       <div className="flex items-start justify-between">

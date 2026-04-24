@@ -265,9 +265,9 @@ export function CostTable({
               const catNet = +catItems.reduce((s, i) => s + i.netAmount, 0).toFixed(2)
               const label  = LABELS[cat as CostCategory] ?? cat
               return (
-                <>
+                <React.Fragment key={cat}>
                   {/* Category header */}
-                  <tr key={`hdr-${cat}`} className="bg-slate-50">
+                  <tr className="bg-slate-50">
                     <td colSpan={editable ? 9 : 8} className="px-3 py-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
@@ -374,7 +374,7 @@ export function CostTable({
                       {editable && <td />}
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               )
             })}
           </tbody>

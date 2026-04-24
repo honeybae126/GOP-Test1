@@ -1,281 +1,317 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useActiveRole } from '@/hooks/useActiveRole'
 import Link from 'next/link'
 import { useGopStore } from '@/lib/gop-store'
-import { PageHeader } from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import {
   getPatientById, formatPatientName, calculateAge,
-  getCoverageByPatientId, getCostEstimateByEncounterId,
+  getCoverageByPatientId,
+  type CostLineItem,
 } from '@/lib/mock-data'
-import { ArrowLeft, CheckCircle, DollarSign, Wrench, Lock } from 'lucide-react'
+import { ArrowLeft, CheckCircle, DollarSign, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { EditLockBanner } from '@/components/gop/edit-lock-banner'
 import { useEditLock } from '@/hooks/use-edit-lock'
+import { CostTable } from '@/components/gop/cost-table'
+
+function StatusPill({ done, label }: { done: boolean; label: string }) {
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 500, padding: '3px 8px',
+      borderRadius: 'var(--radius-full)',
+      background: done ? '#ECFDF5' : 'var(--gray-100)',
+      color: done ? '#065F46' : 'var(--gray-500)',
+      border: `1px solid ${done ? '#A7F3D0' : 'var(--border-medium)'}`,
+    }}>
+      {label}
+    </span>
+  )
+}
 
 export default function FinanceVerificationPage() {
   const { id } = useParams<{ id: string }>()
-  const router = useRouter()
   const { data: session } = useSession()
   const req = useGopStore((s) => s.requests.find((r) => r.id === id))
+  const setFinanceVerified = useGopStore((s) => s.setFinanceVerified)
+  const updateLineItems    = useGopStore((s) => s.updateLineItems)
 
-  const role = session?.user?.role ?? ''
-  const isStaff = role === 'INSURANCE_STAFF' || role === 'ADMIN'
-
-  // Finance page is accessible to all authenticated roles — doctors see it read-only
-  useEffect(() => {
-    if (!role) return
-  }, [role])
-
-  const [approvedAmount, setApprovedAmount] = useState<string>(
-    req?.approvedAmount?.toString() ?? req?.estimatedAmount?.toString() ?? ''
-  )
-  const [saving, setSaving] = useState(false)
+  const role             = useActiveRole()
+  const isFinance        = role === 'FINANCE'
+  const isInsuranceStaff = role === 'INSURANCE_STAFF'
+  const isITAdmin        = role === 'IT_ADMIN'
+  const isStaff          = isInsuranceStaff || isITAdmin
 
   const patient  = req ? getPatientById(req.patientId) : null
   const coverage = req ? getCoverageByPatientId(req.patientId) : null
-  const estimate = req ? getCostEstimateByEncounterId(req.encounterId) : null
 
-  const surgeonDone       = req?.surgeonVerified ?? req?.doctorVerified ?? false
-  const anaesthetistDone  = req?.anaesthetistVerified ?? req?.doctorVerified ?? false
-  const bothDone          = surgeonDone && anaesthetistDone
+  const surgeonDone      = req?.surgeonVerified ?? req?.doctorVerified ?? false
+  const anaesthetistDone = req?.anaesthetistVerified ?? req?.doctorVerified ?? false
+  const bothDone         = surgeonDone && anaesthetistDone
+
+  const canEditCost = isFinance && !req?.financeVerified
 
   const lockUser = session?.user?.email ? { email: session.user.email, name: session.user.name ?? '' } : null
   const { conflictName, dismissed, dismiss } = useEditLock(id, lockUser)
 
+  const [pendingItems, setPendingItems] = useState<CostLineItem[] | null>(null)
+  const [saving, setSaving] = useState(false)
+
   if (!req) return null
 
-  const handleSaveApprovedAmount = async () => {
+  const performer = { name: session?.user?.name ?? role, role }
+
+  const handleSaveCost = async () => {
+    if (!pendingItems) return
     setSaving(true)
-    await new Promise(r => setTimeout(r, 400))
+    await new Promise(r => setTimeout(r, 300))
+    updateLineItems(req.id, pendingItems, performer)
+    setPendingItems(null)
     setSaving(false)
-    toast.success('Approved amount saved.')
+    toast.success('Cost estimate saved.')
+  }
+
+  const handleVerify = () => {
+    if (!bothDone) {
+      toast.error('Both doctor verifications must be complete first.')
+      return
+    }
+    if (pendingItems) {
+      updateLineItems(req.id, pendingItems, performer)
+      setPendingItems(null)
+    }
+    setFinanceVerified(req.id, performer)
+    toast.success('Finance review confirmed.')
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="p-6 space-y-6 max-w-2xl">
       <EditLockBanner conflictName={conflictName} dismissed={dismissed} dismiss={dismiss} />
-      <PageHeader
-        title="Finance Review"
-        description={`Step 3 — Cost review for ${req.patientName}`}
-      >
-        <Link href={`/gop/${id}`}>
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="size-3 mr-1" />
-            Back
-          </Button>
-        </Link>
-      </PageHeader>
 
-      {/* Progress indicator */}
-      <div className="flex items-center gap-2 text-sm">
-        <div className={`flex items-center gap-1.5 ${surgeonDone ? 'text-green-700' : 'text-muted-foreground'}`}>
-          {surgeonDone ? <CheckCircle className="size-5 text-green-500" /> : <div className="size-5 rounded-full bg-muted flex items-center justify-center text-xs">1</div>}
-          Surgeon
+      {/* Page header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-h1">Finance Review</h1>
+          <p className="text-body mt-1.5" >
+            Step 3 — Cost review for {req.patientName}
+          </p>
         </div>
-        <div className={`flex-1 h-px ${surgeonDone ? 'bg-green-300' : 'bg-border'}`} />
-        <div className={`flex items-center gap-1.5 ${anaesthetistDone ? 'text-green-700' : 'text-muted-foreground'}`}>
-          {anaesthetistDone ? <CheckCircle className="size-5 text-green-500" /> : <div className="size-5 rounded-full bg-muted flex items-center justify-center text-xs">2</div>}
-          Anaesthetist
-        </div>
-        <div className="flex-1 h-px bg-border" />
-        <div className="flex items-center gap-1.5 font-medium text-primary">
-          <div className="size-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
-          Finance
-        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/gop/${id}`}>
+            <ArrowLeft className="size-4" /> Back
+          </Link>
+        </Button>
       </div>
 
-      {/* Patient summary */}
-      {patient && (
-        <Card className="border-dashed">
-          <CardContent className="pt-4 pb-3 flex flex-wrap gap-4 text-sm">
-            <div><span className="text-muted-foreground">Patient: </span><span className="font-medium">{formatPatientName(patient)}</span></div>
-            <div><span className="text-muted-foreground">Age: </span><span className="font-medium">{calculateAge(patient.birthDate)} yrs</span></div>
-            <div><span className="text-muted-foreground">Insurer: </span><Badge variant="outline" className="text-xs">{req.insurer}</Badge></div>
-            {coverage && <div><span className="text-muted-foreground">Co-pay: </span><span className="font-medium">{coverage.coPayPercent}%</span></div>}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Clinical verification status — read-only */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Lock className="size-4 text-muted-foreground" />
-            <CardTitle className="text-sm">Clinical Sections</CardTitle>
-            <Badge variant="secondary" className="text-xs ml-auto">Read-only</Badge>
+      {/* Progress steps */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 0,
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-light)',
+        borderRadius: 'var(--radius-xl)',
+        boxShadow: 'var(--shadow-card)',
+        padding: '14px 20px',
+      }}>
+        {[
+          { step: 1, label: 'Surgeon', done: surgeonDone },
+          { step: 2, label: 'Anaesthetist', done: anaesthetistDone },
+          { step: 3, label: 'Finance', done: false, active: true },
+        ].map((s, i) => (
+          <div key={s.step} style={{ display: 'flex', alignItems: 'center', flex: i < 2 ? 1 : 0, gap: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              {s.done ? (
+                <CheckCircle style={{ width: 20, height: 20, color: 'var(--success)' }} />
+              ) : (
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                  background: s.active ? 'var(--blue-600)' : 'var(--gray-100)',
+                  color: s.active ? '#fff' : 'var(--gray-400)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 700,
+                }}>
+                  {s.step}
+                </div>
+              )}
+              <span style={{
+                fontSize: 13, fontWeight: s.active ? 600 : 400,
+                color: s.done ? 'var(--success)' : s.active ? 'var(--blue-600)' : 'var(--gray-400)',
+              }}>
+                {s.label}
+              </span>
+            </div>
+            {i < 2 && (
+              <div style={{
+                flex: 1, height: 1, margin: '0 12px',
+                background: s.done ? 'var(--success)' : 'var(--border-light)',
+              }} />
+            )}
           </div>
-          <CardDescription className="text-xs">Surgeon and anaesthetist verification status.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-center justify-between text-sm py-1">
-            <span className="text-muted-foreground">Surgeon Verification</span>
-            {surgeonDone
-              ? <Badge className="bg-green-100 text-green-800 border-green-200">Complete</Badge>
-              : <Badge variant="secondary">Pending</Badge>}
-          </div>
-          <div className="flex items-center justify-between text-sm py-1">
-            <span className="text-muted-foreground">Anaesthetist Verification</span>
-            {anaesthetistDone
-              ? <Badge className="bg-green-100 text-green-800 border-green-200">Complete</Badge>
-              : <Badge variant="secondary">Pending</Badge>}
-          </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
 
-      {/* ANZER cost estimate — read-only */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <DollarSign className="size-4 text-muted-foreground" />
-            <CardTitle className="text-sm">Cost Estimate (ANZER)</CardTitle>
-            <Badge variant="secondary" className="text-xs ml-auto">Read-only</Badge>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Patient summary */}
+        {patient && (
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px dashed var(--border-medium)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '12px 20px',
+            display: 'flex', flexWrap: 'wrap', gap: '8px 24px',
+          }}>
+            {[
+              { label: 'Patient', value: formatPatientName(patient) },
+              { label: 'Age', value: `${calculateAge(patient.birthDate)} yrs` },
+              { label: 'Insurer', value: req.insurer },
+              ...(coverage ? [{ label: 'Co-pay', value: `${coverage.coPayPercent}%` }] : []),
+              { label: 'Quote', value: req.quoteNumber, mono: true },
+            ].map(({ label, value, mono }) => (
+              <div key={label} style={{ fontSize: 13 }}>
+                <span style={{ color: 'var(--gray-400)' }}>{label}: </span>
+                <span style={{ fontWeight: 500, color: 'var(--gray-700)', fontFamily: mono ? 'var(--font-mono)' : undefined }}>
+                  {value}
+                </span>
+              </div>
+            ))}
           </div>
-          <CardDescription className="text-xs">Source: ANZER cost estimation module.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {estimate ? (
-            <>
-              <table className="w-full text-sm mb-4">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left pb-2 text-xs font-medium text-muted-foreground">Item</th>
-                    <th className="text-right pb-2 text-xs font-medium text-muted-foreground">Qty</th>
-                    <th className="text-right pb-2 text-xs font-medium text-muted-foreground">Unit</th>
-                    <th className="text-right pb-2 text-xs font-medium text-muted-foreground">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {estimate.items.map((item, i) => (
-                    <tr key={i} className="border-b last:border-0">
-                      <td className="py-1.5">
-                        <div>{item.description}</div>
-                        {item.code && <div className="text-xs text-muted-foreground font-mono">{item.code}</div>}
-                      </td>
-                      <td className="text-right py-1.5 text-muted-foreground">{item.quantity}</td>
-                      <td className="text-right py-1.5 text-muted-foreground">${item.unitPrice.toLocaleString()}</td>
-                      <td className="text-right py-1.5 font-medium">${item.total.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t font-medium">
-                    <td colSpan={3} className="pt-2 text-right">Estimated Total</td>
-                    <td className="pt-2 text-right text-base">${estimate.total.toLocaleString()}</td>
-                  </tr>
-                  {coverage && (
-                    <tr className="text-muted-foreground">
-                      <td colSpan={3} className="text-right text-xs">Patient Co-Pay ({coverage.coPayPercent}%)</td>
-                      <td className="text-right text-sm">${estimate.coPayAmount.toLocaleString()}</td>
-                    </tr>
-                  )}
-                </tfoot>
-              </table>
+        )}
 
-              <Separator className="my-4" />
+        {/* Clinical verification status */}
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-light)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--shadow-card)',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '12px 16px', borderBottom: '1px solid var(--border-light)',
+          }}>
+            <Lock style={{ width: 13, height: 13, color: 'var(--gray-400)' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Clinical Sections
+            </span>
+            <span style={{
+              marginLeft: 'auto', fontSize: 10, fontWeight: 500,
+              padding: '2px 7px', borderRadius: 'var(--radius-full)',
+              background: 'var(--gray-100)', color: 'var(--gray-500)',
+            }}>Read-only</span>
+          </div>
+          <div style={{ padding: '0 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-light)' }}>
+              <span style={{ fontSize: 13, color: 'var(--gray-500)' }}>Surgeon Verification</span>
+              <StatusPill done={surgeonDone} label={surgeonDone ? 'Complete' : 'Pending'} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
+              <span style={{ fontSize: 13, color: 'var(--gray-500)' }}>Anaesthetist Verification</span>
+              <StatusPill done={anaesthetistDone} label={anaesthetistDone ? 'Complete' : 'Pending'} />
+            </div>
+          </div>
+        </div>
 
-              {/* Approved amount — editable by staff only */}
-              <div className="space-y-1.5">
-                <Label htmlFor="approved-amount">Approved Amount (USD)</Label>
-                {isStaff ? (
-                  <div className="flex gap-2">
-                    <Input
-                      id="approved-amount"
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      value={approvedAmount}
-                      onChange={e => setApprovedAmount(e.target.value)}
-                      className="max-w-[180px]"
-                    />
-                    <Button variant="outline" size="sm" onClick={handleSaveApprovedAmount} disabled={saving}>
-                      {saving ? 'Saving…' : 'Save'}
+        {/* Cost estimate */}
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-light)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--shadow-card)',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '12px 16px', borderBottom: '1px solid var(--border-light)',
+          }}>
+            <DollarSign style={{ width: 13, height: 13, color: 'var(--gray-400)' }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Cost Estimate
+            </span>
+            <span style={{ marginLeft: 'auto' }}>
+              {req.financeVerified ? (
+                <span style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0' }}>Finance Confirmed</span>
+              ) : canEditCost ? (
+                <span style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'var(--blue-50)', color: 'var(--blue-700)', border: '1px solid var(--blue-200)' }}>Editable</span>
+              ) : (
+                <span style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'var(--gray-100)', color: 'var(--gray-500)', border: '1px solid var(--border-medium)' }}>Read-only</span>
+              )}
+            </span>
+          </div>
+          <div style={{ padding: 16 }}>
+            <p style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 12 }}>
+              Quote: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--gray-700)' }}>{req.quoteNumber}</span>
+              {' · '}{req.quoteDate}
+              {canEditCost && ' — Edit quantities, prices, and discounts below.'}
+            </p>
+            {req.lineItems?.length ? (
+              <>
+                <CostTable
+                  lineItems={pendingItems ?? req.lineItems}
+                  cpi={req.cpi ?? 1}
+                  pricingType={req.pricingType ?? 'NORMAL'}
+                  pricingUnit={req.pricingUnit}
+                  marketingPackage={req.marketingPackage}
+                  employer={req.employer}
+                  coPayPercent={coverage?.coPayPercent}
+                  showCategorySubtotals
+                  editable={canEditCost}
+                  onUpdate={setPendingItems}
+                />
+                {canEditCost && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+                    {pendingItems && (
+                      <Button variant="outline" size="sm" onClick={() => setPendingItems(null)}>
+                        Discard changes
+                      </Button>
+                    )}
+                    <Button size="sm" disabled={!pendingItems || saving} onClick={handleSaveCost}>
+                      {saving ? 'Saving…' : 'Save cost changes'}
                     </Button>
                   </div>
-                ) : (
-                  <div className="text-sm font-medium text-muted-foreground">
-                    ${approvedAmount || '—'} <span className="text-xs">(set by Insurance Staff)</span>
-                  </div>
                 )}
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">No cost estimate available for this encounter.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Instrument / operational components — placeholder */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Wrench className="size-4 text-muted-foreground" />
-            <CardTitle className="text-sm">Instrument & Operational Components</CardTitle>
-            <Badge variant="outline" className="text-xs ml-auto text-amber-700 border-amber-300 bg-amber-50">TBC</Badge>
+              </>
+            ) : (
+              <p style={{ fontSize: 13, color: 'var(--gray-400)' }}>No line items available for this request.</p>
+            )}
           </div>
-          <CardDescription className="text-xs">Read-only. Pending clinical confirmation.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            <span className="mt-0.5 shrink-0">⚠</span>
-            <span>This section is pending clinical confirmation. Contents may change.</span>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left pb-2 text-xs font-medium text-muted-foreground">Item</th>
-                <th className="text-left pb-2 text-xs font-medium text-muted-foreground">Category</th>
-                <th className="text-right pb-2 text-xs font-medium text-muted-foreground">Qty</th>
-                <th className="text-left pb-2 text-xs font-medium text-muted-foreground pl-3">Unit</th>
-                <th className="text-left pb-2 text-xs font-medium text-muted-foreground pl-3">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b">
-                <td className="py-1.5">Surgical instrument set</td>
-                <td className="py-1.5 text-muted-foreground">Instruments</td>
-                <td className="py-1.5 text-right text-muted-foreground">1</td>
-                <td className="py-1.5 text-muted-foreground pl-3">Set</td>
-                <td className="py-1.5 text-muted-foreground pl-3 italic text-xs">e.g. laparoscopic kit</td>
-              </tr>
-              <tr className="border-b">
-                <td className="py-1.5">Anaesthesia consumables</td>
-                <td className="py-1.5 text-muted-foreground">Consumables</td>
-                <td className="py-1.5 text-right text-muted-foreground">1</td>
-                <td className="py-1.5 text-muted-foreground pl-3">Kit</td>
-                <td className="py-1.5 text-muted-foreground pl-3 italic text-xs">e.g. breathing circuit</td>
-              </tr>
-              <tr>
-                <td className="py-1.5">Operating theatre setup</td>
-                <td className="py-1.5 text-muted-foreground">Operational</td>
-                <td className="py-1.5 text-right text-muted-foreground">1</td>
-                <td className="py-1.5 text-muted-foreground pl-3">Session</td>
-                <td className="py-1.5 text-muted-foreground pl-3 italic text-xs">e.g. room prep fee</td>
-              </tr>
-            </tbody>
-          </table>
-          <p className="text-[11px] text-muted-foreground italic">
-            TBC — pending Debbie confirmation. Do not use for actual billing.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Navigation cue */}
-      {bothDone && isStaff && (
-        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
-          <CheckCircle className="size-4" />
-          Both clinical verifications complete. Return to the request to finalise and submit.
-          <Link href={`/gop/${id}`} className="ml-auto underline font-medium text-primary text-xs">Go to request →</Link>
         </div>
-      )}
+
+        {/* Finance confirm */}
+        {isFinance && !req.financeVerified && (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
+            borderTop: '1px solid var(--border-light)', paddingTop: 16,
+          }}>
+            <Button disabled={!bothDone} onClick={handleVerify} className="gap-2">
+              <CheckCircle className="size-4" />
+              Confirm Finance Review
+            </Button>
+            {!bothDone && (
+              <p style={{ fontSize: 12, color: 'var(--gray-400)' }}>
+                Awaiting completion of both clinical verifications before finance sign-off.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* All done cue */}
+        {bothDone && (isFinance || isStaff) && req.financeVerified && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: '#ECFDF5', border: '1px solid #A7F3D0',
+            borderRadius: 'var(--radius-md)', padding: '12px 16px',
+            fontSize: 13, color: '#065F46',
+          }}>
+            <CheckCircle style={{ width: 15, height: 15, flexShrink: 0 }} />
+            Finance review complete. Return to the request to finalise and submit.
+            <Link href={`/gop/${id}`} style={{ marginLeft: 'auto', color: 'var(--blue-600)', fontSize: 12, fontWeight: 500, textDecoration: 'underline' }}>
+              Go to request →
+            </Link>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

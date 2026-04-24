@@ -6,13 +6,13 @@ import {
   getPatientById,
   getCoverageByPatientId,
   getEncounterById,
-  getCostEstimateByEncounterId,
   formatPatientName,
   calculateAge,
   MOCK_PREFILL_RESPONSE,
 } from '@/lib/mock-data'
 import { useGopStore } from '@/lib/gop-store'
 import { notFound } from 'next/navigation'
+import { CostTable } from '@/components/gop/cost-table'
 
 function PrintTrigger() {
   useEffect(() => {
@@ -34,7 +34,6 @@ export default function GOPPrintPage() {
   const patient    = getPatientById(req.patientId)
   const coverage   = getCoverageByPatientId(req.patientId)
   const encounter  = getEncounterById(req.encounterId)
-  const estimate   = getCostEstimateByEncounterId(req.encounterId)
   const prefill    = MOCK_PREFILL_RESPONSE[req.id] ?? []
 
   const isRejected = req.status === 'REJECTED'
@@ -116,7 +115,11 @@ export default function GOPPrintPage() {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 11, color: '#888' }}>Reference</div>
-          <div style={{ fontWeight: 'bold', fontFamily: 'monospace', fontSize: 13 }}>{req.id.toUpperCase()}</div>
+          <div style={{ fontWeight: 'bold', fontFamily: 'monospace', fontSize: 13 }}>
+            GOP {req.id.toUpperCase()}
+            <br />
+            <span style={{ fontSize: 12, fontFamily: 'monospace' }}>Quote Number: ${req.quoteNumber} | Quote Date: ${req.quoteDate.split('-').reverse().join('/')}</span>
+          </div>
           <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>Generated {generatedAt ? fmt(generatedAt) : '—'}</div>
         </div>
       </div>
@@ -198,7 +201,8 @@ export default function GOPPrintPage() {
         {/* Workflow */}
         <div className="section">
           <h2>Workflow Status</h2>
-          <div className="row"><span className="label">Assigned Doctor</span><span className="value">{req.assignedDoctor}</span></div>
+          <div className="row"><span className="label">Surgeon</span><span className="value">{req.assignedSurgeon ?? '—'}</span></div>
+          <div className="row"><span className="label">Anaesthetist</span><span className="value">{req.assignedAnaesthetist ?? '—'}</span></div>
           <div className="row"><span className="label">Doctor Verified</span><span className="value">{req.doctorVerified ? 'Yes' : 'No'}</span></div>
           <div className="row"><span className="label">Staff Finalised</span><span className="value">{req.staffFinalised ? 'Yes' : 'No'}</span></div>
           {req.notes && <div className="row"><span className="label">Notes</span><span className="value" style={{ maxWidth: 200, textAlign: 'right' }}>{req.notes}</span></div>}
@@ -206,51 +210,34 @@ export default function GOPPrintPage() {
       </div>
 
       {/* Cost Estimate */}
-      {estimate && (
+      {req.lineItems?.length > 0 && (
         <div className="section">
-          <h2>Cost Estimate (ANZER)</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Code</th>
-                <th className="right">Qty</th>
-                <th className="right">Unit Price</th>
-                <th className="right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {estimate.items.map((item, i) => (
-                <tr key={i}>
-                  <td>{item.description}</td>
-                  <td style={{ fontFamily: 'monospace', color: '#666' }}>{item.code ?? '—'}</td>
-                  <td className="right">{item.quantity}</td>
-                  <td className="right">${item.unitPrice.toLocaleString()}</td>
-                  <td className="right">${item.total.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={4} style={{ textAlign: 'right' }}>Subtotal</td>
-                <td className="right">${estimate.total.toLocaleString()}</td>
-              </tr>
-              {coverage && (
-                <tr>
-                  <td colSpan={4} style={{ textAlign: 'right', fontWeight: 'normal', color: '#666' }}>
-                    Patient Co-Pay ({coverage.coPayPercent}%)
-                  </td>
-                  <td className="right" style={{ fontWeight: 'normal' }}>${estimate.coPayAmount.toLocaleString()}</td>
-                </tr>
-              )}
-              {req.approvedAmount && (
-                <tr>
-                  <td colSpan={4} style={{ textAlign: 'right' }}>Approved Amount</td>
-                  <td className="right" style={{ color: '#166534' }}>${req.approvedAmount.toLocaleString()}</td>
-                </tr>
-              )}
-            </tfoot>
-          </table>
+          <h2>
+            Cost Estimate &nbsp;
+            <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 'normal', color: '#666' }}>
+              {req.quoteNumber} · {req.quoteDate}
+            </span>
+          </h2>
+          <CostTable
+            lineItems={req.lineItems}
+            cpi={req.cpi ?? 1}
+            pricingType={req.pricingType ?? 'NORMAL'}
+            pricingUnit={req.pricingUnit}
+            marketingPackage={req.marketingPackage}
+            employer={req.employer}
+            coPayPercent={coverage?.coPayPercent}
+            showCategorySubtotals
+            editable={false}
+            printMode
+          />
+          {req.approvedAmount && (
+            <div style={{ textAlign: 'right', marginTop: 8, fontSize: 12 }}>
+              <strong>Approved Amount: </strong>
+              <span style={{ color: '#166534', fontWeight: 700 }}>
+                ${req.approvedAmount.toLocaleString()}
+              </span>
+            </div>
+          )}
         </div>
       )}
 

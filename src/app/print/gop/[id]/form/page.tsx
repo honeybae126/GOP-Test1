@@ -66,12 +66,22 @@ export default function GOPFormPrintPage() {
 
   // Coverage fields
   if (coverage) {
-    prefillMap['policy-number']  = prefillMap['policy-number']  ?? { value: coverage.policyNumber,       aiPrefilled: false, humanVerified: true }
-    prefillMap['membership-id']  = prefillMap['membership-id']  ?? { value: coverage.membershipId,       aiPrefilled: false, humanVerified: true }
-    prefillMap['plan-name']      = { value: coverage.planName,       aiPrefilled: false, humanVerified: true }
-    prefillMap['coverage-start'] = { value: coverage.coverageDates.start, aiPrefilled: false, humanVerified: true }
-    prefillMap['coverage-end']   = { value: coverage.coverageDates.end,   aiPrefilled: false, humanVerified: true }
+    prefillMap['policy-number']  = prefillMap['policy-number']  ?? { value: coverage.policyNumber,        aiPrefilled: false, humanVerified: true }
+    prefillMap['membership-id']  = prefillMap['membership-id']  ?? { value: coverage.membershipId,        aiPrefilled: false, humanVerified: true }
+    prefillMap['plan-name']      = { value: coverage.planName,        aiPrefilled: false, humanVerified: true }
+    prefillMap['coverage-start'] = { value: coverage.coverageDates?.start ?? coverage.period?.start ?? '', aiPrefilled: false, humanVerified: true }
+    prefillMap['coverage-end']   = { value: coverage.coverageDates?.end   ?? coverage.period?.end   ?? '', aiPrefilled: false, humanVerified: true }
     prefillMap['policy-no']      = prefillMap['policy-no'] ?? { value: coverage.policyNumber, aiPrefilled: false, humanVerified: true }
+  }
+
+  // Cost fields — derived from req.lineItems (authoritative source)
+  if (req.lineItems?.length) {
+    const lineTotal    = +req.lineItems.reduce((s, i) => s + i.netAmount, 0).toFixed(2)
+    const coPayPercent = coverage?.coPayPercent ?? 0
+    const coPayAmt     = +((lineTotal * coPayPercent) / 100).toFixed(2)
+    prefillMap['total-estimate'] = { value: lineTotal, aiPrefilled: false, humanVerified: true }
+    prefillMap['total-cost']     = { value: lineTotal, aiPrefilled: false, humanVerified: true }
+    prefillMap['copay-amount']   = prefillMap['copay-amount'] ?? { value: coPayAmt, aiPrefilled: false, humanVerified: true }
   }
 
   const fmt = (d: string) => {
@@ -146,7 +156,11 @@ export default function GOPFormPrintPage() {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 11, color: '#888' }}>Reference</div>
-          <div style={{ fontWeight: 'bold', fontFamily: 'monospace', fontSize: 13 }}>{req.id.toUpperCase()}</div>
+          <div style={{ fontWeight: 'bold', fontFamily: 'monospace', fontSize: 13 }}>
+            GOP ${req.id.toUpperCase()}
+            <br />
+            <span style={{ fontSize: 12, fontFamily: 'monospace' }}>Quote Number: ${req.quoteNumber} | Quote Date: ${req.quoteDate.split('-').reverse().join('/')}</span>
+          </div>
           <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>Generated {generatedAt ? fmt(generatedAt) : ''}</div>
         </div>
       </div>
@@ -259,7 +273,7 @@ export default function GOPFormPrintPage() {
         <div className="sign-field">
           <div className="sign-line" />
           <div className="sign-label">Attending Physician Signature</div>
-          {req.assignedDoctor && <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>{req.assignedDoctor}</div>}
+          {req.assignedSurgeon && <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>{req.assignedSurgeon}</div>}
         </div>
         <div className="sign-field">
           <div className="sign-line" />

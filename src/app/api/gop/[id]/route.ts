@@ -16,7 +16,7 @@ export async function GET(
 
   const where =
     role === 'DOCTOR'
-      ? { id, assignedDoctorId: userId }
+      ? { id, OR: [{ assignedSurgeonId: userId }, { assignedAnaesthetistId: userId }] }
       : { id }
 
   const gopRequest = await prisma.gOPRequest.findFirst({
@@ -37,7 +37,7 @@ export async function PATCH(
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const role = session.user.role as string
-  if (role !== 'INSURANCE_STAFF' && role !== 'ADMIN') {
+  if (role !== 'INSURANCE_STAFF' && role !== 'IT_ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -60,7 +60,7 @@ export async function PATCH(
 
   await createAuditEntry(
     session.user.id as string,
-    role === 'ADMIN' ? 'ADMIN' : 'STAFF',
+    role === 'IT_ADMIN' ? 'ADMIN' : 'STAFF',
     'REQUEST_UPDATED',
     id,
     existing as any,

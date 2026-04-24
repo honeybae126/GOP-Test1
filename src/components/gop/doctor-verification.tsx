@@ -172,7 +172,9 @@ export function DoctorVerification({
             <div>
               <div className="text-muted-foreground text-xs">Estimated Cost</div>
               <div className="font-medium">${estimate.total.toLocaleString()} USD</div>
-              <div className="text-xs text-muted-foreground">Co-Pay: ${estimate.coPayAmount.toLocaleString()}</div>
+              {estimate.coPayAmount != null && (
+                <div className="text-xs text-muted-foreground">Co-Pay: ${estimate.coPayAmount.toLocaleString()}</div>
+              )}
             </div>
           )}
           <div>

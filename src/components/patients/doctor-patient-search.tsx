@@ -15,18 +15,18 @@ import type { MockPatient, MockEncounter, MockCoverage, MockGOPRequest } from '@
 import { formatPatientName, calculateAge } from '@/lib/mock-data'
 
 interface DoctorPatientSearchProps {
-  patients: MockPatient[]
-  encounters: MockEncounter[]
-  coverages: MockCoverage[]
+  patients?: MockPatient[]
+  encounters?: MockEncounter[]
+  coverages?: MockCoverage[]
   gopRequests: MockGOPRequest[]
 }
 
 const ALL_VALUE = '__ALL__'
 
 export function DoctorPatientSearch({
-  patients,
-  encounters,
-  coverages,
+  patients = [],
+  encounters = [],
+  coverages = [],
   gopRequests,
 }: DoctorPatientSearchProps) {
   const [nameQuery, setNameQuery] = useState('')
@@ -35,13 +35,15 @@ export function DoctorPatientSearch({
   const [admissionFrom, setAdmissionFrom] = useState('')
   const [admissionTo, setAdmissionTo] = useState('')
 
-  // Derive unique wards and physicians from encounters
+  // Derive unique wards and physicians from encounters - safe map
   const wards = useMemo(() => {
+    if (!encounters) return []
     const set = new Set(encounters.map((e) => e.serviceProvider.display))
     return Array.from(set).sort()
   }, [encounters])
 
   const physicians = useMemo(() => {
+    if (!encounters) return []
     const set = new Set(
       encounters
         .map((e) => e.participant[0]?.individual.display)
@@ -50,17 +52,21 @@ export function DoctorPatientSearch({
     return Array.from(set).sort()
   }, [encounters])
 
-  // Join patients with encounters + coverage
+  // Join patients with encounters + coverage - safe
   const rows = useMemo(() => {
-    return patients
+    const safePatients = patients ?? []
+    const safeEncounters = encounters ?? []
+    const safeCoverages = coverages ?? []
+    const safeGopRequests = gopRequests ?? []
+    return safePatients
       .map((patient) => {
-        const encounter = encounters.find(
+        const encounter = safeEncounters.find(
           (e) => e.subject.reference === `Patient/${patient.id}`
         )
-        const coverage = coverages.find(
+        const coverage = safeCoverages.find(
           (c) => c.beneficiary.reference === `Patient/${patient.id}`
         ) ?? null
-        const latestGOP = gopRequests
+        const latestGOP = safeGopRequests
           .filter((r) => r.patientId === patient.id)
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
         const hospitalId = patient.identifier.find(
@@ -77,9 +83,10 @@ export function DoctorPatientSearch({
       }>
   }, [patients, encounters, coverages, gopRequests])
 
-  // Apply filters
+  // Apply filters - safe
   const filtered = useMemo(() => {
     return rows.filter(({ patient, encounter, coverage }) => {
+      if (!encounter) return false
       // Name search
       if (nameQuery.trim()) {
         const full = formatPatientName(patient).toLowerCase()
@@ -163,7 +170,7 @@ export function DoctorPatientSearch({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL_VALUE}>All wards</SelectItem>
-                  {wards.map((ward) => (
+                  {(wards ?? []).map((ward) => (
                     <SelectItem key={ward} value={ward}>
                       {ward}
                     </SelectItem>
@@ -181,7 +188,7 @@ export function DoctorPatientSearch({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL_VALUE}>All physicians</SelectItem>
-                  {physicians.map((doc) => (
+                  {(physicians ?? []).map((doc) => (
                     <SelectItem key={doc} value={doc}>
                       {doc}
                     </SelectItem>
@@ -217,12 +224,12 @@ export function DoctorPatientSearch({
 
       {/* Results count */}
       <p className="text-sm text-muted-foreground">
-        {filtered.length} patient{filtered.length !== 1 ? 's' : ''} found
+        {(filtered.length || 0)} patient{(filtered.length !== 1) ? 's' : ''} found
         {hasFilters && ' matching your filters'}
       </p>
 
       {/* Results table */}
-      {filtered.length === 0 ? (
+      {(filtered.length || 0) === 0 ? (
         <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
           No patients match the selected filters.
         </div>
@@ -306,3 +313,4 @@ export function DoctorPatientSearch({
     </div>
   )
 }
+

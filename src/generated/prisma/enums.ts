@@ -53,7 +53,8 @@ export const AuditAction = {
   NOTES_EDITED: 'NOTES_EDITED',
   USER_CREATED: 'USER_CREATED',
   USER_DEACTIVATED: 'USER_DEACTIVATED',
-  USER_ROLE_CHANGED: 'USER_ROLE_CHANGED'
+  USER_ROLE_CHANGED: 'USER_ROLE_CHANGED',
+  EXPIRY_WARNING_SENT: 'EXPIRY_WARNING_SENT'
 } as const
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction]
@@ -61,8 +62,10 @@ export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction]
 
 export const Role = {
   INSURANCE_STAFF: 'INSURANCE_STAFF',
+  FINANCE: 'FINANCE',
   DOCTOR: 'DOCTOR',
   BILLING_STAFF: 'BILLING_STAFF',
+  IT_ADMIN: 'IT_ADMIN',
   ADMIN: 'ADMIN'
 } as const
 

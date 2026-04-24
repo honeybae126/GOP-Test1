@@ -2,53 +2,18 @@
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Building2, AlertTriangle, Stethoscope, Shield, User, Loader2 } from 'lucide-react'
 
 const DEMO_USERS = [
-  {
-    email: 'staff@intercare.com',
-    role: 'Insurance Staff',
-    description: 'Create & manage GOP requests',
-    icon: User,
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
-  },
-  {
-    email: 'doctor@intercare.com',
-    role: 'Doctor',
-    description: 'Verify clinical sections',
-    icon: Stethoscope,
-    color: 'text-green-600',
-    bg: 'bg-green-50',
-  },
-  {
-    email: 'admin@intercare.com',
-    role: 'Admin',
-    description: 'Full system access',
-    icon: Shield,
-    color: 'text-purple-600',
-    bg: 'bg-purple-50',
-  },
+  { email: 'staff@intercare.com',   password: 'gop123', name: 'Insurance Staff', role: 'Insurance Staff', color: '#EFF6FF', textColor: '#1E40AF', icon: 'fas fa-briefcase' },
+  { email: 'finance@intercare.com', password: 'gop123', name: 'Finance',          role: 'Finance',         color: '#FDF4FF', textColor: '#7E22CE', icon: 'fas fa-chart-bar' },
+  { email: 'doctor@intercare.com',  password: 'gop123', name: 'Doctor',           role: 'Doctor',          color: '#ECFDF5', textColor: '#065F46', icon: 'fas fa-user-md' },
+  { email: 'admin@intercare.com',   password: 'gop123', name: 'IT Admin',         role: 'IT Admin',        color: '#FFF7ED', textColor: '#9A3412', icon: 'fas fa-user-shield' },
 ]
 
-function MicrosoftLogo() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
-      <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
-      <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
-      <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
-    </svg>
-  )
-}
-
-export function SignInForm({ ssoConfigured }: { ssoConfigured: boolean }) {
-  const [loading, setLoading] = useState<string | null>(null)
-  const [error, setError] = useState('')
+export function SignInForm({ ssoConfigured, demoEnabled }: { ssoConfigured: boolean; demoEnabled: boolean }) {
+  const [loading, setLoading]       = useState<string | null>(null)
+  const [error, setError]           = useState('')
+  const [demoOpen, setDemoOpen]     = useState(false)
 
   const handleMicrosoft = async () => {
     setLoading('microsoft')
@@ -56,120 +21,115 @@ export function SignInForm({ ssoConfigured }: { ssoConfigured: boolean }) {
     await signIn('microsoft-entra-id', { callbackUrl: '/' })
   }
 
-  const quickLogin = async (email: string) => {
-    setLoading(email)
+  const handleDemoLogin = async (user: typeof DEMO_USERS[0]) => {
+    setLoading(user.email)
     setError('')
-    const res = await signIn('credentials', {
-      email,
-      password: 'gop123',
-      redirect: false,
-    })
+    const res = await signIn('credentials', { email: user.email, password: user.password, redirect: false })
     if (res?.ok) {
       window.location.href = '/'
     } else {
-      setError('Demo login failed.')
+      setError('Demo login failed. Please try again.')
       setLoading(null)
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="size-12 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-          <Building2 className="size-6 text-primary-foreground" />
-        </div>
+    <div className="auth-card">
+      {/* Logo */}
+      <div className="auth-logo">
+        <div className="auth-logo-icon">I</div>
         <div>
-          <h1 className="text-2xl font-bold leading-none">GOP Automation System</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Intercare Hospital · Phase 1</p>
+          <div className="auth-logo-name">Intercare</div>
+          <div className="auth-logo-sub">GOP Automation System</div>
         </div>
       </div>
 
-      <div className="w-full max-w-md space-y-4">
-        <Card className="shadow-lg">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base">Sign In</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertTriangle className="size-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+      <h2 className="auth-title">Welcome back</h2>
+      <p className="auth-subtitle">Sign in to access the GOP pre-authorisation system.</p>
 
-            {/* Microsoft SSO */}
-            {ssoConfigured ? (
-              <>
-                <Button
-                  className="w-full gap-2 bg-[#0078d4] hover:bg-[#106ebe] text-white"
-                  onClick={handleMicrosoft}
+      {/* Microsoft SSO button */}
+      <button
+        onClick={handleMicrosoft}
+        disabled={!ssoConfigured || !!loading}
+        className="btn btn-outline btn-full"
+        style={{ marginBottom: 'var(--spacing-sm)' }}
+      >
+        {loading === 'microsoft' ? (
+          <i className="fas fa-spinner fa-spin" />
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+            <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+            <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+          </svg>
+        )}
+        {loading === 'microsoft' ? 'Signing in…' : 'Sign in with Microsoft'}
+      </button>
+
+{!ssoConfigured && (
+        <p className="text-xs text-muted-foreground text-center mb-sm flex items-center justify-center gap-xs">
+          <i className="fas fa-info-circle" />
+          SSO not configured — use demo accounts below.
+        </p>
+      )}
+
+      {demoEnabled && (
+        <>
+          <div className="auth-divider">or use demo account</div>
+
+          {/* Demo toggle */}
+          <button
+            type="button"
+            onClick={() => setDemoOpen(o => !o)}
+            className="btn btn-ghost btn-full btn-ghost-dashed justify-between"
+            style={{ marginBottom: demoOpen ? 'var(--spacing-md)' : 0 }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <i className="fas fa-flask" />
+              Demo mode only — not for production use
+            </span>
+            <i className={`fas fa-chevron-${demoOpen ? 'up' : 'down'}`} style={{ fontSize: '0.75rem' }} />
+          </button>
+
+          {demoOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {DEMO_USERS.map(u => (
+                <button
+                  key={u.email}
+                  onClick={() => handleDemoLogin(u)}
                   disabled={!!loading}
+                  className="demo-card"
                 >
-                  {loading === 'microsoft'
-                    ? <Loader2 className="size-4 animate-spin" />
-                    : <MicrosoftLogo />}
-                  Sign in with Microsoft
-                </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  Use your Intercare Hospital Microsoft account
-                </p>
-              </>
-            ) : (
-              <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-center space-y-1">
-                <div className="flex items-center justify-center gap-2 text-amber-700">
-                  <MicrosoftLogo />
-                  <span className="text-sm font-medium">Microsoft SSO not configured</span>
-                </div>
-                <p className="text-xs text-amber-600">
-                  Set <code className="font-mono bg-amber-100 px-1 rounded">ENTRA_ID_CLIENT_ID</code>,{' '}
-                  <code className="font-mono bg-amber-100 px-1 rounded">ENTRA_ID_CLIENT_SECRET</code>, and{' '}
-                  <code className="font-mono bg-amber-100 px-1 rounded">ENTRA_ID_TENANT_ID</code> in <code className="font-mono bg-amber-100 px-1 rounded">.env</code> to enable.
-                </p>
-              </div>
-            )}
-
-            <Separator />
-
-            {/* Demo accounts */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                Demo Accounts
-              </p>
-              <div className="space-y-2">
-                {DEMO_USERS.map(u => {
-                  const Icon = u.icon
-                  const isLoading = loading === u.email
-                  return (
-                    <button
-                      key={u.email}
-                      onClick={() => quickLogin(u.email)}
-                      disabled={!!loading}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors hover:bg-muted/50 text-left ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    >
-                      <div className={`size-8 rounded-full ${u.bg} flex items-center justify-center shrink-0`}>
-                        {isLoading
-                          ? <Loader2 className={`size-4 ${u.color} animate-spin`} />
-                          : <Icon className={`size-4 ${u.color}`} />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">{u.role}</div>
-                        <div className="text-xs text-muted-foreground">{u.description}</div>
-                      </div>
-                      <div className="text-xs text-muted-foreground font-mono shrink-0">
-                        {u.email.split('@')[0]}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-              <p className="text-[10px] text-muted-foreground text-center mt-2">
-                Demo accounts bypass Microsoft SSO · password: <code className="font-mono">gop123</code>
-              </p>
+                  {loading === u.email ? (
+                    <i className="fas fa-spinner fa-spin demo-card-icon" />
+                  ) : (
+                    <div className="demo-card-avatar" style={{ background: u.color, color: u.textColor }}>
+                      <i className={u.icon} />
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-semibold text-foreground text-sm">{u.name}</div>
+                    <div className="text-xs text-muted-foreground">{u.email}</div>
+                  </div>
+                  <i className="fas fa-arrow-right ml-auto text-xs text-muted-foreground" />
+                </button>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </>
+      )}
+
+{error && (
+        <div className="alert-banner alert-error mt-sm">
+          <i className="fas fa-exclamation-circle flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground text-center mt-xl">
+        Intercare Hospital · Phase 1 · Secure Access
+      </p>
     </div>
   )
 }

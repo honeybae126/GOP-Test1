@@ -2,72 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  PlusCircle,
-  ClipboardCheck,
-  Settings,
-  LogOut,
-  Stethoscope,
-  Building2,
-  ChevronRight,
-  BarChart3,
-  UserSearch,
-} from 'lucide-react'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { signOut } from 'next-auth/react'
-import { NotificationBell } from '@/components/notifications/notification-bell'
+import { useActiveRole } from '@/hooks/useActiveRole'
+import { DemoRoleSwitcher } from '@/components/demo-role-switcher'
 
-interface NavItem {
-  label: string
-  href: string
-  icon: React.ElementType
-  badge?: string
-  roles?: string[]
-}
-
-const NAV_ITEMS: NavItem[] = [
-  // Staff / Admin
-  { label: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['INSURANCE_STAFF', 'ADMIN'] },
-  { label: 'Patients', href: '/patients', icon: Users, roles: ['INSURANCE_STAFF', 'ADMIN'] },
-  { label: 'GOP Requests', href: '/gop', icon: FileText, roles: ['INSURANCE_STAFF', 'ADMIN'] },
-  { label: 'New GOP Request', href: '/gop/new', icon: PlusCircle, roles: ['INSURANCE_STAFF', 'ADMIN'] },
-  { label: 'Finance', href: '/finance', icon: BarChart3, roles: ['INSURANCE_STAFF', 'ADMIN'] },
-  // Doctor
-  { label: 'My Patients', href: '/dashboard/doctor', icon: Stethoscope, roles: ['DOCTOR'] },
-  { label: 'Patient Search', href: '/patients/doctor', icon: UserSearch, roles: ['DOCTOR'] },
-  { label: 'My Assigned Requests', href: '/gop', icon: ClipboardCheck, roles: ['DOCTOR'] },
-]
-
-interface SidebarProps {
-  user: {
-    name?: string | null
-    email?: string | null
-    role?: string
-  }
-}
-
-function getRoleBadgeColor(role: string) {
-  switch (role) {
-    case 'INSURANCE_STAFF': return 'bg-blue-100 text-blue-800'
-    case 'DOCTOR': return 'bg-green-100 text-green-800'
-    case 'ADMIN': return 'bg-purple-100 text-purple-800'
-    default: return 'bg-gray-100 text-gray-800'
-  }
-}
-
-function getRoleLabel(role: string) {
+export function getRoleLabel(role: string) {
   switch (role) {
     case 'INSURANCE_STAFF': return 'Insurance Staff'
-    case 'DOCTOR': return 'Doctor'
-    case 'ADMIN': return 'Admin'
-    default: return role
+    case 'DOCTOR':          return 'Doctor'
+    case 'FINANCE':         return 'Finance'
+    case 'IT_ADMIN':        return 'IT Admin'
+    default:                return role
   }
 }
 
@@ -76,104 +21,123 @@ function getInitials(name?: string | null) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
+interface NavItem {
+  label: string
+  href: string
+  icon: string
+  roles?: string[]
+}
+
+const NAV_MAIN: NavItem[] = [
+  { label: 'Dashboard',       href: '/',                 icon: 'fas fa-th-large',    roles: ['INSURANCE_STAFF', 'IT_ADMIN'] },
+  { label: 'My Patients',     href: '/dashboard/doctor', icon: 'fas fa-user-md',     roles: ['DOCTOR'] },
+  { label: 'GOP Requests',    href: '/gop',              icon: 'fas fa-file-medical' },
+  { label: 'New GOP Request', href: '/gop/new',          icon: 'fas fa-plus-circle', roles: ['INSURANCE_STAFF', 'IT_ADMIN'] },
+  { label: 'Patients',        href: '/patients',         icon: 'fas fa-users',       roles: ['INSURANCE_STAFF', 'IT_ADMIN'] },
+  { label: 'Finance',         href: '/finance',          icon: 'fas fa-chart-bar',   roles: ['INSURANCE_STAFF', 'IT_ADMIN', 'FINANCE'] },
+]
+
+const NAV_ADMIN: NavItem[] = [
+  { label: 'User Management', href: '/admin/users',  icon: 'fas fa-user-cog',  roles: ['IT_ADMIN'] },
+  { label: 'System Config',   href: '/admin/config', icon: 'fas fa-sliders-h', roles: ['IT_ADMIN'] },
+  { label: 'Audit Log',       href: '/admin/audit',  icon: 'fas fa-history',   roles: ['IT_ADMIN'] },
+]
+
+interface SidebarProps {
+  user: { name?: string | null; email?: string | null; role?: string }
+}
+
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
-  const role = user.role || ''
+  const activeRole = useActiveRole()
+  const role = activeRole || user.role || ''
 
-  const visibleItems = NAV_ITEMS.filter(item =>
-    !item.roles || item.roles.includes(role)
-  )
+  const visibleMain  = NAV_MAIN.filter(item => !item.roles || item.roles.includes(role))
+  const visibleAdmin = NAV_ADMIN.filter(item => !item.roles || item.roles.includes(role))
+
+  function isActive(href: string) {
+    if (href === '/') return pathname === '/' || pathname === '/dashboard/doctor'
+    return pathname.startsWith(href)
+  }
+
+  function NavLink({ item }: { item: NavItem }) {
+    const active = isActive(item.href)
+    return (
+      <Link
+        href={item.href}
+        className={`sidebar-menu-item${active ? ' active' : ''}`}
+      >
+        <span className="sidebar-menu-item-icon">
+          <i className={item.icon} />
+        </span>
+        <span className="sidebar-menu-item-label">{item.label}</span>
+      </Link>
+    )
+  }
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r bg-sidebar fixed left-0 top-0 z-40">
-      {/* Header */}
-      <div className="flex h-14 items-center gap-2 border-b px-4">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
-          <Building2 className="size-4 text-primary-foreground" />
-        </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold leading-none">GOP System</span>
-          <span className="text-[10px] text-muted-foreground leading-none mt-0.5">Intercare Hospital</span>
+    <aside className="sidebar">
+      {/* Logo */}
+      <div className="sidebar-logo">
+        <div className="sidebar-logo-icon">I</div>
+        <div>
+          <div className="sidebar-logo-text">Intercare</div>
+          <div className="sidebar-logo-sub">GOP System</div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-        <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Navigation
-        </p>
-        {visibleItems.map((item) => {
-          const Icon = item.icon
-          const baseHref = item.href.split('?')[0]
-          const isActive =
-            pathname === baseHref ||
-            (baseHref !== '/' &&
-              pathname.startsWith(baseHref + '/') &&
-              !visibleItems.some(other => other.href !== item.href && pathname === other.href.split('?')[0]))
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors group',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-              )}
-            >
-              <Icon className="size-4 shrink-0" />
-              <span className="flex-1">{item.label}</span>
-              {item.badge && (
-                <Badge variant="secondary" className="text-[10px] h-4 px-1">
-                  {item.badge}
-                </Badge>
-              )}
-              {isActive && <ChevronRight className="size-3 opacity-60" />}
-            </Link>
-          )
-        })}
+      <nav className="sidebar-nav">
+        <div className="sidebar-section-label">Main Menu</div>
+        <div className="sidebar-menu">
+          {visibleMain.map(item => <NavLink key={item.href} item={item} />)}
+        </div>
 
-        <Separator className="my-2" />
+        {visibleAdmin.length > 0 && (
+          <>
+            <div className="sidebar-divider" />
+            <div className="sidebar-section-label">Administration</div>
+            <div className="sidebar-menu">
+              {visibleAdmin.map(item => <NavLink key={item.href} item={item} />)}
+            </div>
+          </>
+        )}
 
-        <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          System
-        </p>
-        <Link
-          href="/settings"
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-        >
-          <Settings className="size-4 shrink-0" />
-          <span>Settings</span>
-        </Link>
+        <div className="sidebar-divider" />
+        <div className="sidebar-menu">
+          <Link
+            href="/settings"
+            className={`sidebar-menu-item${isActive('/settings') ? ' active' : ''}`}
+          >
+            <span className="sidebar-menu-item-icon">
+              <i className="fas fa-cog" />
+            </span>
+            <span className="sidebar-menu-item-label">Settings</span>
+          </Link>
+        </div>
       </nav>
 
-      {/* User section */}
-      <div className="border-t p-3">
-        <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-          <Avatar className="size-8">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">
-              {getInitials(user.name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium leading-none truncate">{user.name}</p>
-            <p className={cn('text-[10px] mt-1 px-1.5 py-0.5 rounded-full inline-block font-medium', getRoleBadgeColor(role))}>
-              {getRoleLabel(role)}
-            </p>
+      {/* User / sign-out */}
+      <div className="sidebar-bottom">
+        <DemoRoleSwitcher />
+        <button
+          className="sidebar-user"
+          onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+          title="Sign out"
+        >
+          <div className="sidebar-avatar">{getInitials(user.name)}</div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{user.name ?? 'User'}</div>
+            <div className="sidebar-user-role">{getRoleLabel(role)}</div>
           </div>
-          <div className="flex items-center gap-1">
-            <NotificationBell />
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-              title="Sign out"
-            >
-              <LogOut className="size-4" />
-            </Button>
-          </div>
-        </div>
+          <i
+            className="fas fa-arrow-right-from-bracket"
+            style={{ color: 'var(--muted-foreground)', fontSize: '0.75rem', flexShrink: 0 }}
+          />
+        </button>
       </div>
     </aside>
   )
 }
+
+export const NAV_ITEMS = NAV_MAIN

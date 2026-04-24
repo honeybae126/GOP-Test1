@@ -1,0 +1,100 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        gray: {
+          25: '#FAFBFF',
+          50: '#F8F9FD',
+          100: '#F0F2F8',
+          200: '#E2E6F0',
+          300: '#CDD3E0',
+          400: '#9BA3B8',
+          500: '#6B7494',
+          600: '#4A5072',
+          700: '#2E3355',
+          800: '#1A1F3C',
+          900: '#0F1327',
+        },
+        primary: {
+          50: '#EEF3FF',
+          100: '#DCE8FF',
+          200: '#BACCFF',
+          300: '#85A9FF',
+          400: '#5285F9',
+          500: '#3D74F6',
+          600: '#2D6BF4',
+          700: '#1A54E0',
+          800: '#1644C8',
+          900: '#1237A8',
+        },
+        teal: {
+          50: '#F0FDFA',
+          100: '#CCFBF1',
+          500: '#14B8A6',
+          600: '#0D9488',
+          700: '#0F766E',
+        },
+        success: {
+          50: '#F0FDF4',
+          500: '#22C55E',
+          600: '#16A34A',
+          700: '#15803D',
+        },
+        warning: {
+          50: '#FFFBEB',
+          500: '#F59E0B',
+          600: '#D97706',
+          700: '#B45309',
+        },
+        danger: {
+          50: '#FFF1F2',
+          500: '#EF4444',
+          600: '#DC2626',
+          700: '#B91C1C',
+        },
+        info: {
+          50: '#EFF6FF',
+          500: '#3B82F6',
+          600: '#2563EB',
+        },
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
+      borderRadius: {
+        'sm': '4px',
+        'md': '6px',
+        'lg': '8px',
+        'xl': '12px',
+        '2xl': '16px',
+      },
+      boxShadow: {
+        'xs':         '0 1px 2px rgba(0,0,0,0.05)',
+        'sm':         '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)',
+        'md':         '0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)',
+        'lg':         '0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05)',
+        'card':       '0 2px 8px rgba(45,107,244,0.06), 0 0 1px rgba(45,107,244,0.08)',
+        'card-hover': '0 8px 24px rgba(45,107,244,0.1), 0 0 1px rgba(45,107,244,0.1)',
+        'modal':      '0 24px 64px rgba(15,19,39,0.16), 0 0 1px rgba(15,19,39,0.08)',
+      },
+      fontSize: {
+        'xs': ['0.6875rem', { lineHeight: '1.5' }],
+        'sm': ['0.8125rem', { lineHeight: '1.5' }],
+        'base': ['0.875rem', { lineHeight: '1.6' }],
+        'md': ['0.9375rem', { lineHeight: '1.6' }],
+        'lg': ['1rem', { lineHeight: '1.5' }],
+        'xl': ['1.125rem', { lineHeight: '1.4' }],
+        '2xl': ['1.25rem', { lineHeight: '1.3' }],
+        '3xl': ['1.5rem', { lineHeight: '1.2' }],
+      },
+    },
+  },
+  plugins: [],
+}
+

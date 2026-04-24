@@ -12,7 +12,7 @@ export async function POST(
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const role = session.user.role as string
-  if (role !== 'ADMIN') {
+  if (role !== 'IT_ADMIN') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -49,9 +49,14 @@ export async function POST(
     { reason }
   )
 
-  // Notify assigned doctor if present
-  if (existing.assignedDoctorId) {
-    await createNotification(existing.assignedDoctorId, 'DOCTOR', 'REQUEST_REJECTED', id, {
+  if (existing.assignedSurgeonId) {
+    await createNotification(existing.assignedSurgeonId, 'DOCTOR', 'REQUEST_REJECTED', id, {
+      insurerName: existing.insurer?.name ?? '',
+      rejectionReason: reason,
+    }).catch(() => {})
+  }
+  if (existing.assignedAnaesthetistId) {
+    await createNotification(existing.assignedAnaesthetistId, 'DOCTOR', 'REQUEST_REJECTED', id, {
       insurerName: existing.insurer?.name ?? '',
       rejectionReason: reason,
     }).catch(() => {})

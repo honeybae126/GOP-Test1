@@ -25,7 +25,8 @@ interface ReassignDoctorModalProps {
   open: boolean
   onClose: () => void
   gopId: string
-  currentDoctor: string
+  currentSurgeon: string | null
+  currentAnaesthetist: string | null
   performer: { name: string; role: string }
 }
 
@@ -33,19 +34,24 @@ export function ReassignDoctorModal({
   open,
   onClose,
   gopId,
-  currentDoctor,
+  currentSurgeon,
+  currentAnaesthetist,
   performer,
 }: ReassignDoctorModalProps) {
   const reassignDoctor = useGopStore((s) => s.reassignDoctor)
 
+  const [role, setRole] = useState<'surgeon' | 'anaesthetist'>('surgeon')
   const [doctors, setDoctors] = useState<string[]>(MOCK_DOCTORS)
   const [selected, setSelected] = useState('')
   const [reason, setReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  const currentDoctor = role === 'surgeon' ? currentSurgeon : currentAnaesthetist
+
   // Fetch real doctor list from DB, fall back to mock on error
   useEffect(() => {
     if (!open) return
+    setRole('surgeon')
     setSelected('')
     setReason('')
     fetch('/api/users?role=DOCTOR')
@@ -64,14 +70,12 @@ export function ReassignDoctorModal({
     if (!canSubmit) return
     setSubmitting(true)
 
-    // Update Zustand immediately (reactive UI)
-    reassignDoctor(gopId, performer, selected, reason.trim())
+    reassignDoctor(gopId, performer, selected, reason.trim(), role)
 
-    // Persist to DB via PATCH
     fetch(`/api/gop/${gopId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assignedDoctor: selected }),
+      body: JSON.stringify(role === 'surgeon' ? { assignedSurgeonId: selected } : { assignedAnaesthetistId: selected }),
     }).catch(() => {})
 
     toast.success(`Doctor reassigned to ${selected} successfully`)
@@ -93,18 +97,50 @@ export function ReassignDoctorModal({
         </DialogHeader>
 
         <div className="space-y-4 py-1">
+          {/* Role selector */}
+          <div className="space-y-1.5">
+            <Label>Reassign role</Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="radio"
+                  name="reassign-role"
+                  value="surgeon"
+                  checked={role === 'surgeon'}
+                  onChange={() => { setRole('surgeon'); setSelected('') }}
+                  className="accent-primary"
+                />
+                Surgeon
+                {currentSurgeon && <span className="text-xs text-muted-foreground">({currentSurgeon})</span>}
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="radio"
+                  name="reassign-role"
+                  value="anaesthetist"
+                  checked={role === 'anaesthetist'}
+                  onChange={() => { setRole('anaesthetist'); setSelected('') }}
+                  className="accent-primary"
+                />
+                Anaesthetist
+                {currentAnaesthetist && <span className="text-xs text-muted-foreground">({currentAnaesthetist})</span>}
+              </label>
+            </div>
+          </div>
+
           {/* Doctor dropdown */}
           <div className="space-y-1.5">
-            <Label htmlFor="doctor-select">Assigned Doctor</Label>
+            <Label htmlFor="doctor-select">{role === 'surgeon' ? 'Surgeon' : 'Anaesthetist'}</Label>
             <Select value={selected} onValueChange={setSelected}>
               <SelectTrigger id="doctor-select">
                 <SelectValue placeholder="Select a doctor…" />
               </SelectTrigger>
               <SelectContent>
-                {/* Current doctor — shown but disabled */}
-                <SelectItem value={currentDoctor} disabled>
-                  {currentDoctor} <span className="text-muted-foreground ml-1">(current)</span>
-                </SelectItem>
+                {currentDoctor && (
+                  <SelectItem value={currentDoctor} disabled>
+                    {currentDoctor} <span className="text-muted-foreground ml-1">(current)</span>
+                  </SelectItem>
+                )}
                 {doctors
                   .filter((d) => d !== currentDoctor)
                   .map((doctor) => (
@@ -132,10 +168,11 @@ export function ReassignDoctorModal({
             )}
           </div>
 
-          {/* Verification reset warning */}
           {selected && selected !== currentDoctor && (
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-              Any existing surgeon or anaesthetist verifications will be reset and must be completed again by the new doctor.
+              {role === 'surgeon'
+                ? 'Existing surgeon verification will be reset and must be completed again by the new surgeon.'
+                : 'Existing anaesthetist verification will be reset and must be completed again by the new anaesthetist.'}
             </p>
           )}
         </div>

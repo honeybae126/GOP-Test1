@@ -19,7 +19,7 @@ export async function GET(
   const { requestId } = await params
   const role = session.user.role as string
 
-  if (role === 'ADMIN') {
+  if (role === 'IT_ADMIN') {
     const history = await getAuditHistory(requestId)
     return NextResponse.json(history)
   }
@@ -35,7 +35,7 @@ export async function GET(
   if (role === 'DOCTOR') {
     const userId = session.user.id as string
     const gopRequest = await prisma.gOPRequest.findFirst({
-      where: { id: requestId, assignedDoctorId: userId },
+      where: { id: requestId, OR: [{ assignedSurgeonId: userId }, { assignedAnaesthetistId: userId }] },
     })
     if (!gopRequest) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 

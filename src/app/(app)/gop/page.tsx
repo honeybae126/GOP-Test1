@@ -1,59 +1,68 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import Link from 'next/link'
+import { useActiveRole } from '@/hooks/useActiveRole'
+import { useMemo } from 'react'
 import { useGopStore } from '@/lib/gop-store'
-import { PageHeader } from '@/components/layout/header'
-import { Button } from '@/components/ui/button'
 import { GOPRequestsTable } from '@/components/gop/gop-requests-table'
-import { PlusCircle } from 'lucide-react'
+import Link from 'next/link'
 
 export default function GOPRequestsPage() {
   const { data: session } = useSession()
-  const allRequests = useGopStore((s) => s.requests)
+  const allRequests = useGopStore((s) => s.requests) ?? []
 
-  const role = session?.user?.role ?? ''
+  const role     = useActiveRole()
   const userName = session?.user?.name ?? ''
-  const isStaff = role === 'INSURANCE_STAFF' || role === 'ADMIN'
   const isDoctor = role === 'DOCTOR'
+  const isStaff  = role === 'INSURANCE_STAFF' || role === 'IT_ADMIN'
 
-  // Doctors only see requests assigned to them by name
-  const requests = isDoctor
-    ? allRequests.filter((r) => r.assignedDoctor === userName)
-    : allRequests
+  const requests = useMemo(() => {
+    if (!allRequests) return []
+    return isDoctor
+      ? allRequests.filter(r => r.assignedSurgeon === userName || r.assignedAnaesthetist === userName)
+      : allRequests
+  }, [allRequests, isDoctor, userName])
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="GOP Requests"
-        description={
-          isDoctor
-            ? `Showing pre-authorisation requests assigned to you (${userName}).`
-            : 'All Guarantee of Payment pre-authorisation requests.'
-        }
-      >
+    <div className="page-container">
+      {/* Page header */}
+      <div className="dashboard-header">
+        <div>
+          <h1 className="header-title">GOP Requests</h1>
+          <p className="header-subtitle">
+            {isDoctor
+              ? `Requests assigned to you · ${userName}`
+              : 'All Guarantee of Payment pre-authorisation requests'}
+          </p>
+        </div>
         {isStaff && (
-          <Link href="/gop/new">
-            <Button size="sm">
-              <PlusCircle className="size-3 mr-1" />
-              New GOP Request
-            </Button>
+          <Link href="/gop/new" className="btn btn-primary" style={{ height: 40, paddingInline: '1.125rem', fontSize: '0.875rem' }}>
+            <i className="fas fa-plus" />
+            New Request
           </Link>
         )}
-      </PageHeader>
+      </div>
 
-      {isDoctor && requests.length === 0 && (
-        <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-          No GOP requests are currently assigned to <strong>{userName}</strong>.
-          <br />
-          Requests will appear here once Insurance Staff creates and assigns them
-          to you.
-        </div>
-      )}
-
-      {requests.length > 0 && (
-        <GOPRequestsTable requests={requests} userRole={role} />
-      )}
+      <div style={{ padding: 'var(--spacing-lg)' }}>
+        {isDoctor && requests.length === 0 ? (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '4rem 2rem', textAlign: 'center',
+            background: 'white', border: '1px dashed var(--border-medium)',
+            borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)',
+          }}>
+            <div className="metric-icon blue" style={{ margin: '0 auto 1rem' }}>
+              <i className="fas fa-file-medical" />
+            </div>
+            <p style={{ fontWeight: 600, color: 'var(--foreground)', marginBottom: '0.375rem' }}>No GOP requests assigned</p>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--muted-foreground)', maxWidth: 320 }}>
+              Requests will appear here once Insurance Staff creates and assigns them to you.
+            </p>
+          </div>
+        ) : (
+          <GOPRequestsTable requests={requests} userRole={role} />
+        )}
+      </div>
     </div>
   )
 }

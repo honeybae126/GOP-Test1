@@ -21,12 +21,12 @@ function ExpiryChecker() {
       const { requests, setExpired } = useGopStore.getState()
       const now = Date.now()
 
-      const overdue = requests.filter(
+      const overdue = requests ? requests.filter(
         (r) =>
           r.status === 'SUBMITTED' &&
           r.expiresAt != null &&
           new Date(r.expiresAt).getTime() < now
-      )
+      ) : [];
 
       // Update Zustand store immediately (reactive UI update)
       overdue.forEach((r) => setExpired(r.id, SYSTEM_PERFORMER, SYSTEM_DETAIL))

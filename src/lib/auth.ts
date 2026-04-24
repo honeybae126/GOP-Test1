@@ -1,78 +1,87 @@
-import NextAuth from "next-auth"
-import MicrosoftEntraId from "next-auth/providers/microsoft-entra-id"
-import Credentials from "next-auth/providers/credentials"
+import NextAuth from 'next-auth'
+import Credentials from 'next-auth/providers/credentials'
 
-// Maps Microsoft account email → hospital role.
-// In production, replace with a DB lookup against UserMetadata.
-const ROLE_REGISTRY: Record<string, string> = {
-  "staff@intercare.com":   "INSURANCE_STAFF",
-  "doctor@intercare.com":  "DOCTOR",
-  "admin@intercare.com":   "ADMIN",
+const ROLE_PRIORITY = ['IT_ADMIN', 'INSURANCE_STAFF', 'DOCTOR', 'FINANCE']
+
+const DEMO_USERS: Record<string, { name: string; role: string }> = {
+  'staff@intercare.com':   { name: 'Demo Staff',         role: 'INSURANCE_STAFF' },
+  'doctor@intercare.com':  { name: 'Dr. Sarah Mitchell', role: 'DOCTOR'          },
+  'finance@intercare.com': { name: 'Demo Finance',       role: 'FINANCE'         },
+  'admin@intercare.com':   { name: 'Demo Admin',         role: 'IT_ADMIN'        },
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
-    // ── Microsoft Entra ID (primary, production path) ──────────────────────
-    MicrosoftEntraId({
-      clientId:     process.env.ENTRA_ID_CLIENT_ID     ?? "00000000-0000-0000-0000-000000000000",
-      clientSecret: process.env.ENTRA_ID_CLIENT_SECRET ?? "placeholder-secret",
-      issuer: `https://login.microsoftonline.com/${process.env.ENTRA_ID_TENANT_ID ?? "common"}/v2.0`,
-    }),
-
-    // ── Credentials (demo / development only) ─────────────────────────────
-    Credentials({
-      credentials: { email: {}, password: {} },
-      async authorize(credentials) {
-        const demos: Record<string, { id: string; name: string; role: string }> = {
-          "staff@intercare.com":  { id: "mock-staff-id",  name: "Insurance Staff",  role: "INSURANCE_STAFF" },
-          "doctor@intercare.com": { id: "mock-doctor-id", name: "Dr. Sok Phearith", role: "DOCTOR"           },
-          "admin@intercare.com":  { id: "mock-admin-id",  name: "Admin User",       role: "ADMIN"            },
-        }
-        const email    = credentials?.email as string
-        const password = credentials?.password as string
-        if (password === "gop123" && demos[email]) {
-          return { ...demos[email], email }
-        }
-        return null
+    {
+      id: 'microsoft-entra-id',
+      name: 'Microsoft',
+      type: 'oidc',
+      issuer: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/v2.0`,
+      clientId:     process.env.AZURE_AD_CLIENT_ID!,
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+      wellKnown: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/v2.0/.well-known/openid-configuration`,
+      authorization: {
+        url: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/oauth2/v2.0/authorize`,
+        params: {
+          scope: 'openid profile email User.Read',
+        },
       },
-    }),
+      token: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/oauth2/v2.0/token`,
+      userinfo: 'https://graph.microsoft.com/oidc/userinfo',
+      profile(profile: any) {
+        return {
+          id:    profile.sub,
+          name:  profile.name,
+          email: profile.email ?? profile.preferred_username,
+          image: null,
+          roles: profile.roles ?? [],
+        }
+      },
+    },
+    ...(process.env.DEMO_AUTH_ENABLED === 'true' ? [
+      Credentials({
+        name: 'Demo Credentials',
+        credentials: {
+          email:    { label: 'Email',    type: 'email'    },
+          password: { label: 'Password', type: 'password' },
+        },
+        async authorize(credentials) {
+          const email    = credentials?.email as string
+          const password = credentials?.password as string
+          if (password !== 'gop123') return null
+          const user = DEMO_USERS[email]
+          if (!user) return null
+          return { id: email, email, name: user.name, role: user.role }
+        },
+      })
+    ] : []),
   ],
 
-  session: { strategy: "jwt" },
-
   callbacks: {
-    jwt({ token, user, account }) {
-      // Credentials provider — role already on the user object
-      if (user?.role) {
-        token.role = user.role
+    async jwt({ token, account, profile, user }) {
+      if (account?.provider === 'microsoft-entra-id') {
+        const roles: string[] = (profile as any)?.roles ?? []
+        const role = ROLE_PRIORITY.find(r => roles.includes(r))
+        token.role = role ?? 'NO_ROLE'
+        token.name = (profile as any)?.name ?? token.name
       }
-      // Microsoft Entra ID — derive role from email via registry
-      if (account?.provider === "microsoft-entra-id" && token.email) {
-        token.role = ROLE_REGISTRY[token.email as string] ?? null
+      if (user && (user as any).role) {
+        token.role = (user as any).role
       }
       return token
     },
 
-    session({ session, token }) {
-      if (token) {
-        session.user.id   = token.sub as string
-        session.user.role = token.role as string
-      }
+    async session({ session, token }) {
+      session.user.role = token.role as string
+      session.user.id   = token.sub ?? ''
       return session
-    },
-
-    // Block Microsoft users whose email is not in the registry
-    signIn({ account, profile }) {
-      if (account?.provider === "microsoft-entra-id") {
-        const email = profile?.email ?? (profile as any)?.preferred_username ?? ""
-        if (!ROLE_REGISTRY[email]) {
-          // Not a recognised hospital account — deny access
-          return false
-        }
-      }
-      return true
     },
   },
 
-  pages: { signIn: "/auth/signin" },
+  pages: {
+    signIn: '/auth/signin',
+    error:  '/auth/error',
+  },
+
+  session: { strategy: 'jwt' },
 })

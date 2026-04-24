@@ -124,7 +124,8 @@ export const GOPRequestScalarFieldEnum = {
   status: 'status',
   patientId: 'patientId',
   insurerId: 'insurerId',
-  assignedDoctorId: 'assignedDoctorId',
+  assignedSurgeonId: 'assignedSurgeonId',
+  assignedAnaesthetistId: 'assignedAnaesthetistId',
   formData: 'formData',
   submittedAt: 'submittedAt',
   expiresAt: 'expiresAt',
@@ -132,6 +133,7 @@ export const GOPRequestScalarFieldEnum = {
   rejectedAt: 'rejectedAt',
   rejectedReason: 'rejectedReason',
   expiredAt: 'expiredAt',
+  stageEnteredAt: 'stageEnteredAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

@@ -37,8 +37,9 @@ export async function GET(request: NextRequest) {
 
     // Notify all Insurance Staff and Admins
     const recipients = await prisma.userMetadata.findMany({
-      where: { role: { in: ['INSURANCE_STAFF', 'ADMIN'] } },
+      where: { role: { in: ['INSURANCE_STAFF', 'IT_ADMIN'] } },
     })
+
     for (const user of recipients) {
       await createNotification(
         user.id,

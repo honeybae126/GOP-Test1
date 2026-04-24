@@ -46,6 +46,16 @@ enum AuditAction {
   USER_DEACTIVATED
   USER_ROLE_CHANGED
   EXPIRY_WARNING_SENT
+  BILLING_QUOTE_CREATED
+  BILLING_QUOTE_UPDATED
+  BILLING_QUOTE_FINALISED
+  BILLING_GOP_CREATED
+}
+
+enum BillingStatus {
+  DRAFT
+  FINALISED
+  GOP_CREATED
 }
 
 model Notification {
@@ -189,6 +199,77 @@ model FeatureFlag {
   config  Json?
 
   @@map("feature_flag")
+}
+
+// Billing module — stores quotation data in the GOP database.
+// HIS identifiers (departmentId, doctorId, insurerId, etc.) are stored as strings
+// and denormalised names are also stored so the quote remains accurate if HIS data changes.
+model BillingQuote {
+  id                  String        @id @default(cuid())
+  quoteNumber         String        @unique
+  cpiId               String        @default("") // HIS CPIPersonal identifier
+  patientName         String        @default("")
+  dob                 DateTime?
+  gender              String?
+  phoneNumber         String?
+  departmentId        String?       // HIS DeptID (reference only)
+  departmentName      String?       // denormalised
+  attendingDoctorId   String?       // HIS DoctorID
+  attendingDoctorName String?       // denormalised
+  lengthOfStay        Int?
+  procedureCode       String?       // HIS ProcCode
+  procedureName       String?       // denormalised
+  diagnosisCode       String?
+  diagnosisDescription String?      // denormalised
+  provisionalDiagnosis String?
+  doctorOrderSetId    String?
+  doctorOrderSetName  String?       // denormalised
+  pricingType         String        @default("NORMAL") // NORMAL | DIFFERENT
+  differentPricingId  String?
+  employerId          String?
+  employerName        String?       // denormalised
+  insurerId           String        @default("")  // HIS InsID
+  insurerName         String        @default("")  // denormalised
+  discountPackageId   String?
+  discountPackageName String?       // denormalised
+  marketingPackageId  String?
+  marketingPackageName String?      // denormalised
+  quoteDate           DateTime      @default(now())
+  status              BillingStatus @default(DRAFT)
+  totalNetAmount      Decimal       @default(0) @db.Decimal(12, 2)
+  gopRequestId        String?       // FK to gop_requests if GOP created
+  createdBy           String        // GOP user ID (UserMetadata.id or entraObjectId)
+  createdByName       String        @default("")
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  items               BillingQuoteItem[]
+
+  @@index([cpiId])
+  @@index([status])
+  @@index([quoteDate])
+  @@index([createdAt(sort: Desc)])
+  @@map("billing_quotes")
+}
+
+model BillingQuoteItem {
+  id          String       @id @default(cuid())
+  quoteId     String
+  department  String       @default("")
+  type        String       @default("")
+  code        String       @default("")
+  description String       @default("")
+  unit        Int          @default(1)
+  price       Decimal      @default(0) @db.Decimal(12, 2)
+  amount      Decimal      @default(0) @db.Decimal(12, 2) // unit * price
+  discount    Decimal      @default(0) @db.Decimal(12, 2)
+  netAmount   Decimal      @default(0) @db.Decimal(12, 2) // amount - discount
+  sortOrder   Int          @default(0)
+
+  quote       BillingQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("billing_quote_items")
 }
 
 enum Role {

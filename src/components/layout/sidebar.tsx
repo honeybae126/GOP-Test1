@@ -35,6 +35,7 @@ const NAV_MAIN: NavItem[] = [
   { label: 'New GOP Request', href: '/gop/new',          icon: 'fas fa-plus-circle', roles: ['INSURANCE_STAFF', 'IT_ADMIN'] },
   { label: 'Patients',        href: '/patients',         icon: 'fas fa-users',       roles: ['INSURANCE_STAFF', 'IT_ADMIN'] },
   { label: 'Finance',         href: '/finance',          icon: 'fas fa-chart-bar',   roles: ['INSURANCE_STAFF', 'IT_ADMIN', 'FINANCE'] },
+  { label: 'Billing / Quotation', href: '/billing',      icon: 'fas fa-file-invoice-dollar', roles: ['INSURANCE_STAFF', 'IT_ADMIN', 'BILLING_STAFF'] },
 ]
 
 const NAV_ADMIN: NavItem[] = [

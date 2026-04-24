@@ -1,148 +1,165 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   DESIGN TOKENS — INTERCARE PREMIUM
+   DESIGN TOKENS — HIS VISUAL LANGUAGE (natural extension of hospital system)
+   Palette: warm earth tones, beige background, dark-brown primary
    ============================================================================ */
 :root {
-  /* Brand */
-  --primary: #5B5FFF;
-  --primary-foreground: #F0F4FF;
-  --primary-hover: #4A4FE8;
-  --primary-dark: #3D40CC;
-  --primary-glow: rgba(91, 95, 255, 0.25);
-  --primary-subtle: rgba(91, 95, 255, 0.08);
-  --accent: #6366F1;
+  /* Brand — HIS brown / earth palette */
+  --primary: #5B4A2E;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #3D3020;
+  --primary-dark: #2C2010;
+  --primary-glow: rgba(91, 74, 46, 0.20);
+  --primary-subtle: rgba(91, 74, 46, 0.08);
+  --accent: #7A6245;
   --accent-foreground: #FFFFFF;
 
-  /* Sidebar */
-  --sidebar-primary: #5B5FFF;
+  /* Sidebar — white panel with warm border */
+  --sidebar-primary: #5B4A2E;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-bg: #FFFFFF;
-  --sidebar-foreground: #1F2937;
-  --sidebar-accent: rgba(91, 95, 255, 0.07);
-  --sidebar-accent-foreground: #5B5FFF;
-  --sidebar-border: #F0F1F5;
-  --sidebar-ring: #5B5FFF;
+  --sidebar-bg: #FDFBF8;
+  --sidebar-foreground: #2C2416;
+  --sidebar-accent: rgba(91, 74, 46, 0.07);
+  --sidebar-accent-foreground: #5B4A2E;
+  --sidebar-border: #E8E2D8;
+  --sidebar-ring: #5B4A2E;
 
   /* Surface */
-  --background: #F7F8FC;
-  --foreground: #111827;
+  --background: #F5F0E8;
+  --foreground: #2C2416;
   --card: #FFFFFF;
-  --card-foreground: #111827;
+  --card-foreground: #2C2416;
   --popover: #FFFFFF;
-  --popover-foreground: #111827;
-  --secondary: #F3F4F6;
-  --secondary-foreground: #374151;
-  --muted: #E5E7EB;
-  --muted-foreground: #6B7280;
+  --popover-foreground: #2C2416;
+  --secondary: #EDE8DC;
+  --secondary-foreground: #6B5E4A;
+  --muted: #C8BFA8;
+  --muted-foreground: #9C8E7A;
 
   /* Semantic */
-  --destructive: #EF4444;
+  --destructive: #8B2500;
   --destructive-foreground: #FFFFFF;
-  --success: #10B981;
-  --success-subtle: rgba(16, 185, 129, 0.1);
-  --warning: #F59E0B;
-  --warning-subtle: rgba(245, 158, 11, 0.1);
-  --info: #3B82F6;
-  --info-subtle: rgba(59, 130, 246, 0.1);
-  --border: #E8EAEF;
-  --input: #F3F4F6;
-  --ring: #5B5FFF;
+  --success: #2D6A4F;
+  --success-subtle: rgba(45, 106, 79, 0.12);
+  --warning: #B5451B;
+  --warning-subtle: rgba(181, 69, 27, 0.10);
+  --info: #1D4E89;
+  --info-subtle: rgba(29, 78, 137, 0.10);
+  --border: #C8BFA8;
+  --input: #FDFBF8;
+  --ring: #5B4A2E;
+
+  /* HIS status badge tokens */
+  --status-draft:       #6B6B6B; --status-draft-bg:       #F0EFED;
+  --status-submitted:   #1D4E89; --status-submitted-bg:   #E8EFF8;
+  --status-verified:    #1D6B5E; --status-verified-bg:    #E6F3F1;
+  --status-approved:    #2D6A4F; --status-approved-bg:    #E6F2EC;
+  --status-rejected:    #8B2500; --status-rejected-bg:    #FBEEE8;
+  --status-expired:     #7A5B00; --status-expired-bg:     #F8F2E0;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #5B5FFF 0%, #6366F1 60%, #818CF8 100%);
-  --gradient-success: linear-gradient(135deg, #10B981 0%, #059669 100%);
-  --gradient-warning: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-  --gradient-danger: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-  --gradient-surface: linear-gradient(180deg, #FFFFFF 0%, #F7F8FC 100%);
-  --gradient-page: linear-gradient(135deg, #EEF0FF 0%, #F7F8FC 40%, #F7F8FC 100%);
+  --gradient-primary: linear-gradient(135deg, #5B4A2E 0%, #7A6245 100%);
+  --gradient-success: linear-gradient(135deg, #2D6A4F 0%, #1D5A3F 100%);
+  --gradient-warning: linear-gradient(135deg, #B5451B 0%, #8B3015 100%);
+  --gradient-danger: linear-gradient(135deg, #8B2500 0%, #6B1800 100%);
+  --gradient-surface: linear-gradient(180deg, #FFFFFF 0%, #F5F0E8 100%);
+  --gradient-page: #F5F0E8;
 
-  /* Shadows — more depth, slightly colored */
-  --shadow-xs: 0 1px 2px rgba(17, 24, 39, 0.05);
-  --shadow-sm: 0 1px 3px rgba(17, 24, 39, 0.08), 0 1px 2px rgba(17, 24, 39, 0.04);
-  --shadow-md: 0 4px 12px rgba(17, 24, 39, 0.08), 0 2px 6px rgba(17, 24, 39, 0.04);
-  --shadow-lg: 0 12px 32px rgba(17, 24, 39, 0.1), 0 4px 12px rgba(17, 24, 39, 0.05);
-  --shadow-xl: 0 24px 48px rgba(17, 24, 39, 0.12), 0 8px 20px rgba(17, 24, 39, 0.06);
-  --shadow-primary: 0 6px 20px rgba(91, 95, 255, 0.35), 0 2px 6px rgba(91, 95, 255, 0.2);
-  --shadow-primary-sm: 0 2px 8px rgba(91, 95, 255, 0.25);
-  --shadow-card: 0 1px 3px rgba(17, 24, 39, 0.06), 0 1px 2px rgba(17, 24, 39, 0.03);
-  --shadow-card-hover: 0 8px 24px rgba(17, 24, 39, 0.1), 0 2px 8px rgba(17, 24, 39, 0.04);
+  /* Shadows — warm-tinted */
+  --shadow-xs: 0 1px 2px rgba(44, 36, 22, 0.06);
+  --shadow-sm: 0 1px 3px rgba(44, 36, 22, 0.10), 0 1px 2px rgba(44, 36, 22, 0.05);
+  --shadow-md: 0 4px 12px rgba(44, 36, 22, 0.08), 0 2px 6px rgba(44, 36, 22, 0.04);
+  --shadow-lg: 0 12px 32px rgba(44, 36, 22, 0.10), 0 4px 12px rgba(44, 36, 22, 0.05);
+  --shadow-xl: 0 24px 48px rgba(44, 36, 22, 0.12), 0 8px 20px rgba(44, 36, 22, 0.06);
+  --shadow-primary: 0 4px 16px rgba(91, 74, 46, 0.28), 0 2px 6px rgba(91, 74, 46, 0.14);
+  --shadow-primary-sm: 0 2px 8px rgba(91, 74, 46, 0.20);
+  --shadow-card: 0 1px 3px rgba(44, 36, 22, 0.08), 0 1px 2px rgba(44, 36, 22, 0.04);
+  --shadow-card-hover: 0 4px 16px rgba(44, 36, 22, 0.10), 0 2px 6px rgba(44, 36, 22, 0.04);
 
   /* Easing */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --transition-fast: 120ms var(--ease-smooth);
-  --transition-base: 200ms var(--ease-smooth);
-  --transition-slow: 350ms var(--ease-smooth);
-  --transition-spring: 350ms var(--ease-spring);
+  --transition-base: 180ms var(--ease-smooth);
+  --transition-slow: 300ms var(--ease-smooth);
+  --transition-spring: 300ms var(--ease-spring);
 
-  /* Typography */
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'Poppins', sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
-  --font-size-xs: 0.6875rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
+  /* Typography — system-ui matches HIS density */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+  --font-size-xs: 0.6875rem;   /* 11px */
+  --font-size-sm: 0.8125rem;   /* 13px — HIS base */
+  --font-size-base: 0.9375rem; /* 15px */
+  --font-size-lg: 1.0625rem;
+  --font-size-xl: 1.1875rem;
+  --font-size-2xl: 1.375rem;
+  --font-size-3xl: 1.625rem;
 
   /* Spacing */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  --spacing-2xl: 3rem;
+  --spacing-md: 0.875rem;
+  --spacing-lg: 1.25rem;
+  --spacing-xl: 1.75rem;
+  --spacing-2xl: 2.5rem;
 
-  /* Shape */
-  --radius: 0.75rem;
+  /* Shape — flatter, closer to HIS form feel */
+  --radius: 0.1875rem;
   --radius-xs: 0.125rem;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
-  --radius-2xl: 1.5rem;
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
   --radius-full: 9999px;
 
-  /* Backward-compat aliases */
-  --bg-base: #F7F8FC;
+  /* HIS form layout constants */
+  --his-label-width: 140px;
+  --his-row-height: 28px;
+  --his-section-pad: 12px;
+  --his-field-gap: 6px;
+  --his-table-row-h: 28px;
+
+  /* Backward-compat aliases — warm-mapped */
+  --bg-base: #F5F0E8;
   --bg-card: #FFFFFF;
-  --bg-card-hover: #FAFBFF;
-  --border-light: #E8EAEF;
-  --border-medium: #D1D5DB;
-  --gray-25: #FAFBFF;
-  --gray-50: #F9FAFB;
-  --gray-100: #F3F4F6;
-  --gray-200: #E5E7EB;
-  --gray-300: #D1D5DB;
-  --gray-400: #9CA3AF;
-  --gray-500: #6B7280;
-  --gray-600: #4B5563;
-  --gray-700: #374151;
-  --gray-800: #1F2937;
-  --gray-900: #111827;
-  --blue-50: #F0F4FF;
-  --blue-100: #E0EAFF;
-  --blue-200: #C0C7FF;
-  --blue-300: #A5ADFF;
-  --blue-400: #8B91FF;
-  --blue-600: #5B5FFF;
-  --blue-700: #4A4FE8;
-  --priority-emergency-dot: #EF4444;
-  --priority-emergency-text: #991B1B;
-  --priority-urgent-dot: #F59E0B;
-  --priority-urgent-text: #92400E;
-  /* Semantic state colors for text/border usage */
-  --success-text: #065F46;
-  --success-border: #A7F3D0;
-  --warning-text: #92400E;
-  --warning-border: #FDE68A;
-  --ai-bg: #F0EEFF;
-  --ai-color: #7B6EEF;
-  --ai-border: #C4BFFA;
+  --bg-card-hover: #FAF7F2;
+  --border-light: #D8D0C0;
+  --border-medium: #C8BFA8;
+  --gray-25: #FAF8F4;
+  --gray-50: #F5F0E8;
+  --gray-100: #EDE8DC;
+  --gray-200: #DDD6C8;
+  --gray-300: #C8BFA8;
+  --gray-400: #9C8E7A;
+  --gray-500: #6B5E4A;
+  --gray-600: #4E4236;
+  --gray-700: #3A3028;
+  --gray-800: #2C2416;
+  --gray-900: #1A1610;
+  /* Keep blue aliases for status colours */
+  --blue-50: #EAF0F8;
+  --blue-100: #D4E2F2;
+  --blue-200: #A8C4E5;
+  --blue-300: #7CA7D8;
+  --blue-400: #4E8AC8;
+  --blue-600: #1D4E89;
+  --blue-700: #163B6B;
+  --priority-emergency-dot: #C0392B;
+  --priority-emergency-text: #7B241C;
+  --priority-urgent-dot: #B5451B;
+  --priority-urgent-text: #7D3114;
+  /* Semantic state colours for text/border */
+  --success-text: #1D5A3F;
+  --success-border: #9ECBB3;
+  --warning-text: #7A3A00;
+  --warning-border: #E8B89A;
+  --ai-bg: #F0ECE4;
+  --ai-color: #7A6245;
+  --ai-border: #C8B898;
 }
 
 /* ============================================================================
@@ -238,7 +255,7 @@ img { display: block; }
 .dashboard-content {
   flex: 1;
   overflow-y: auto;
-  background: var(--gradient-page);
+  background: var(--background);
   scrollbar-width: thin;
   scrollbar-color: var(--muted) transparent;
 }
@@ -473,21 +490,19 @@ img { display: block; }
    HEADER BAR — Elevated
    ============================================================================ */
 .dashboard-header {
-  background-color: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(232, 234, 239, 0.8);
-  padding: 0.75rem 1.5rem;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
   flex-shrink: 0;
-  min-height: 3.75rem;
+  min-height: 2.75rem;
   position: sticky;
   top: 0;
   z-index: 20;
-  box-shadow: 0 1px 0 rgba(232, 234, 239, 0.6), 0 2px 8px rgba(17, 24, 39, 0.04);
+  box-shadow: 0 1px 0 var(--border);
 }
 .header-title {
   font-size: 1.125rem;
@@ -1285,3 +1300,468 @@ img { display: block; }
   .metric-grid { grid-template-columns: 1fr 1fr; }
   .page-container { padding: 1rem; }
 }
+
+/* ============================================================================
+   HIS DESIGN LANGUAGE — Form layout, table, status bar, badges
+   Replicates the visual weight and density of the hospital's existing HIS
+   ============================================================================ */
+
+/* ── HIS form layout ──────────────────────────────────────────────────────── */
+.his-panel {
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0;
+}
+.his-panel + .his-panel { border-top: none; }
+
+.his-section {
+  padding: var(--his-section-pad) 1rem;
+}
+.his-section-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--foreground);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+  letter-spacing: 0.01em;
+}
+
+/* Label-left / input-right row — mirrors HIS form grid */
+.his-form { display: flex; flex-direction: column; gap: var(--his-field-gap); }
+.his-row {
+  display: flex;
+  align-items: center;
+  min-height: var(--his-row-height);
+  gap: 0;
+}
+.his-label {
+  width: var(--his-label-width);
+  min-width: var(--his-label-width);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-align: right;
+  padding-right: 10px;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+.his-value {
+  flex: 1;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  min-width: 0;
+}
+.his-input {
+  flex: 1;
+  height: var(--his-row-height);
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--input);
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  outline: none;
+  font-family: inherit;
+  transition: border-color var(--transition-fast);
+  min-width: 0;
+}
+.his-input:focus { border-color: var(--primary); background: #FFFFFF; }
+.his-input:read-only { background: var(--secondary); color: var(--muted-foreground); cursor: default; }
+.his-input[disabled] { background: var(--secondary); opacity: 0.7; cursor: not-allowed; }
+
+.his-select {
+  height: var(--his-row-height);
+  padding: 0 22px 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--input) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239C8E7A'/%3E%3C/svg%3E") no-repeat right 8px center;
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+  min-width: 0;
+  flex: 1;
+}
+.his-select:focus { border-color: var(--primary); background-color: #FFFFFF; }
+
+.his-textarea {
+  flex: 1;
+  padding: 5px 7px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: var(--input);
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  min-height: 56px;
+  transition: border-color var(--transition-fast);
+}
+.his-textarea:focus { border-color: var(--primary); background: #FFFFFF; }
+
+/* Inline search button (mirrors HIS CPI lookup) */
+.his-lookup-btn {
+  height: var(--his-row-height);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 0 2px 2px 0;
+  background: var(--secondary);
+  font-size: 0.75rem;
+  color: var(--foreground);
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+.his-lookup-btn:hover { background: var(--muted); }
+.his-input-with-btn { border-radius: 2px 0 0 2px; }
+
+/* From-patient-record indicator */
+.his-source-tag {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-subtle);
+  border: 1px solid rgba(91,74,46,0.2);
+  border-radius: 2px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+/* Insurer-specific field highlight */
+.his-row-highlight { background: rgba(29,78,137,0.04); border-radius: 2px; }
+
+/* ── HIS table ────────────────────────────────────────────────────────────── */
+.his-table-wrapper {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #FFFFFF;
+  overflow: hidden;
+}
+.his-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  min-width: 640px;
+}
+.his-table thead tr {
+  background: #EDE8DC;
+  border-bottom: 1px solid var(--border);
+}
+.his-table th {
+  padding: 5px 8px;
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  border-right: 1px solid var(--border);
+}
+.his-table th:last-child { border-right: none; }
+.his-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid #EDE8DC;
+  vertical-align: middle;
+  height: var(--his-table-row-h);
+  color: var(--foreground);
+  line-height: 1.3;
+}
+.his-table td:last-child { border-right: none; }
+.his-table tbody tr:nth-child(even) { background: #F5F0E8; }
+.his-table tbody tr:last-child td { border-bottom: none; }
+.his-table tbody tr:hover { background: #E8E0D0; cursor: pointer; }
+.his-table tbody tr.selected { background: #DDD5C5; }
+
+/* Scroll wrapper for table */
+.his-table-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+
+/* ── HIS filter bar ───────────────────────────────────────────────────────── */
+.his-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #EDE8DC;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.his-filter-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.his-filter-input {
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 0.8125rem;
+  background: #FFFFFF;
+  color: var(--foreground);
+  outline: none;
+  font-family: inherit;
+}
+.his-filter-input:focus { border-color: var(--primary); }
+.his-filter-select {
+  height: 26px;
+  padding: 0 20px 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 0.8125rem;
+  background: #FFFFFF url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239C8E7A'/%3E%3C/svg%3E") no-repeat right 6px center;
+  -webkit-appearance: none;
+  appearance: none;
+  color: var(--foreground);
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.his-filter-select:focus { border-color: var(--primary); }
+
+/* ── HIS buttons ──────────────────────────────────────────────────────────── */
+.his-btn {
+  height: 26px;
+  padding: 0 14px;
+  border-radius: 2px;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.his-btn-primary {
+  background: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
+}
+.his-btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+.his-btn-secondary {
+  background: #FFFFFF;
+  color: var(--foreground);
+  border-color: var(--border);
+}
+.his-btn-secondary:hover { background: var(--secondary); }
+.his-btn-danger {
+  background: #8B2500;
+  color: #FFFFFF;
+  border-color: #8B2500;
+}
+.his-btn-danger:hover { background: #6B1800; }
+.his-btn-lg {
+  height: 28px;
+  padding: 0 16px;
+  font-size: 0.875rem;
+}
+
+/* ── HIS status badges ────────────────────────────────────────────────────── */
+.his-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 2px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.his-badge-draft     { background: var(--status-draft-bg);     color: var(--status-draft);     border: 1px solid #D0CECC; }
+.his-badge-submitted { background: var(--status-submitted-bg); color: var(--status-submitted); border: 1px solid #B8CEDE; }
+.his-badge-verified  { background: var(--status-verified-bg);  color: var(--status-verified);  border: 1px solid #A8CECA; }
+.his-badge-approved  { background: var(--status-approved-bg);  color: var(--status-approved);  border: 1px solid #A8C8B8; }
+.his-badge-rejected  { background: var(--status-rejected-bg);  color: var(--status-rejected);  border: 1px solid #D8B0A0; }
+.his-badge-expired   { background: var(--status-expired-bg);   color: var(--status-expired);   border: 1px solid #CCC090; }
+
+/* ── HIS stat boxes ───────────────────────────────────────────────────────── */
+.his-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #FFFFFF;
+  overflow: hidden;
+}
+.his-stat-box {
+  padding: 12px 14px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background var(--transition-fast);
+}
+.his-stat-box:last-child { border-right: none; }
+.his-stat-box:hover { background: var(--secondary); }
+.his-stat-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+.his-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.his-stat-sub {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+  line-height: 1;
+}
+.his-stat-box.accent-blue  .his-stat-value { color: var(--status-submitted); }
+.his-stat-box.accent-teal  .his-stat-value { color: var(--status-verified);  }
+.his-stat-box.accent-green .his-stat-value { color: var(--status-approved);  }
+.his-stat-box.accent-amber .his-stat-value { color: var(--status-expired);   }
+
+/* ── HIS status bar (bottom chrome) ──────────────────────────────────────── */
+.his-status-bar {
+  height: 22px;
+  background: var(--primary);
+  border-top: 1px solid var(--primary-hover);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 0;
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  color: rgba(255,255,255,0.82);
+  font-family: var(--font-sans);
+  user-select: none;
+  z-index: 30;
+}
+.his-status-bar-sep {
+  width: 1px;
+  height: 12px;
+  background: rgba(255,255,255,0.25);
+  margin: 0 10px;
+}
+.his-status-bar-item { white-space: nowrap; }
+.his-status-bar-item.right { margin-left: auto; }
+
+/* ── HIS two-panel page layout ────────────────────────────────────────────── */
+.his-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.his-page-header {
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border);
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+  min-height: 38px;
+}
+.his-page-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.his-page-sub {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  margin-top: 1px;
+}
+.his-page-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Settings sidebar layout */
+.his-settings-layout {
+  display: flex;
+  gap: 0;
+  min-height: 100%;
+}
+.his-settings-sidebar {
+  width: 180px;
+  min-width: 180px;
+  border-right: 1px solid var(--border);
+  background: var(--secondary);
+  flex-shrink: 0;
+}
+.his-settings-nav-item {
+  display: block;
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition-fast);
+  cursor: pointer;
+  background: none;
+  border-left: 3px solid transparent;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.his-settings-nav-item:hover { background: #DDD6C8; }
+.his-settings-nav-item.active { background: #FFFFFF; border-left-color: var(--primary); font-weight: 600; color: var(--primary); }
+.his-settings-content { flex: 1; padding: 14px; min-width: 0; }
+
+/* Vertical timeline (audit log) */
+.his-timeline { display: flex; flex-direction: column; }
+.his-timeline-entry { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.his-timeline-entry:last-child { border-bottom: none; }
+.his-timeline-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--primary); margin-top: 5px; flex-shrink: 0;
+}
+.his-timeline-body { flex: 1; min-width: 0; }
+.his-timeline-action { font-size: 0.8125rem; font-weight: 600; color: var(--foreground); }
+.his-timeline-meta   { font-size: 0.6875rem; color: var(--muted-foreground); margin-top: 2px; }
+
+/* Tabbed bottom panel */
+.his-tabs { display: flex; border-bottom: 1px solid var(--border); background: #EDE8DC; }
+.his-tab {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: inherit;
+  transition: color var(--transition-fast);
+}
+.his-tab:hover { color: var(--foreground); }
+.his-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; background: #FFFFFF; }
+.his-tab-content { padding: 12px; }

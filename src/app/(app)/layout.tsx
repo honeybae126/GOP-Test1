@@ -1,7 +1,6 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { Sidebar } from '@/components/layout/sidebar'
-import { RightPanel } from '@/components/layout/right-panel'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -15,7 +14,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {children}
         </div>
       </div>
-      <RightPanel user={session.user} />
     </div>
   )
 }

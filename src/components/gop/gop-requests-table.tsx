@@ -178,7 +178,8 @@ export function GOPRequestsTable({ requests, userRole }: GOPRequestsTableProps) 
       </div>
 
       {/* ── Table ── */}
-      <table className="data-table">
+      <div className="table-scroll-area">
+      <table className="data-table" style={{ minWidth: '56rem' }}>
         <thead>
           <tr>
             <th style={{ width: '11%' }}>Quote No.</th>
@@ -390,6 +391,7 @@ export function GOPRequestsTable({ requests, userRole }: GOPRequestsTableProps) 
           )}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

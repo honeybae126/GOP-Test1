@@ -1,438 +1,244 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+/**
+ * HIS Finance / Quotation module — exact layout replica.
+ *
+ * Visual reference: hospital HIS screenshot.
+ * All column names from HIS queries are marked ⚠ ASSUMPTION.
+ */
+
+import React, {
+  useCallback, useEffect, useRef, useState,
+} from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Design constants (match HIS screenshot) ─────────────────────────────────
+const BG      = '#F5F0E8'   // page background
+const PANEL   = '#FAF7F3'   // section panel background
+const BORDER  = '#C8BFA8'   // border colour
+const TEXT    = '#2C2416'   // primary text
+const MUTED   = '#6B5E4A'   // secondary text / read-only value
+const SBAR_BG = '#E8E2D5'   // status bar background
 
-interface HisOption { id: string; name: string }
-interface HisDoctor { id: string; name: string; specialty: string | null }
-interface HisProcedure { code: string; name: string }
-interface HisDiagnosis { code: string; description: string }
-interface HisPriceItem { code: string; description: string; unitPrice: number; type: string | null; department: string | null }
+const F = 12                // base font size px
+const INPUT_H = 22          // input/field height px
+const ROW_GAP = 3           // vertical gap between rows px
 
-interface QuoteItem {
-  _key: string
-  department: string
-  type: string
-  code: string
-  description: string
-  unit: number
-  price: number
-  amount: number
-  discount: number
-  netAmount: number
+const base: React.CSSProperties = {
+  height: INPUT_H,
+  fontSize: F,
+  fontFamily: 'system-ui,-apple-system,sans-serif',
+  color: TEXT,
+  border: `1px solid ${BORDER}`,
+  borderRadius: 0,
+  background: '#FFFFFF',
+  padding: '0 4px',
+  outline: 'none',
+  boxSizing: 'border-box',
+  width: '100%',
+}
+const ro:  React.CSSProperties = { ...base, background: BG, color: MUTED }
+const sel: React.CSSProperties = {
+  ...base,
+  cursor: 'pointer',
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='4'%3E%3Cpath d='M0 0l4 4 4-4z' fill='%23736357'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 4px center',
+  paddingRight: 16,
+}
+const btn: React.CSSProperties = {
+  height: INPUT_H,
+  padding: '0 10px',
+  fontSize: F,
+  fontFamily: 'system-ui,-apple-system,sans-serif',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 0,
+  background: BG,
+  color: TEXT,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+  flexShrink: 0,
+}
+const btnPrimary: React.CSSProperties = {
+  ...btn,
+  background: '#5B4A2E',
+  color: '#FFFFFF',
+  border: '1px solid #3D3020',
 }
 
-interface PatientResult { patientId: string; fullName: string; dob: string; nric: string }
+// ─── Types ───────────────────────────────────────────────────────────────────
+interface Opt  { id: string; name: string }
+interface Doc  { id: string; name: string; specialty: string | null }
+interface Proc { code: string; name: string }
+interface Diag { code: string; description: string }
+interface PriceItem { code: string; description: string; unitPrice: number; type: string | null; department: string | null }
+interface CpiResult { patientId: string; fullName: string; dob: string; nric: string }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+interface QuoteRow {
+  _k: string
+  department: string; type: string; code: string; description: string
+  unit: number; price: number; amount: number; discount: number; netAmount: number
+}
 
-function FormRow({ label, children, highlight }: { label: string; children: React.ReactNode; highlight?: boolean }) {
+// ─── Helper components ───────────────────────────────────────────────────────
+
+/** Single form row: fixed-width label + flex content */
+function Row({
+  label, lw = 120, children,
+}: { label: string; lw?: number; children: React.ReactNode }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', minHeight: 28,
-      background: highlight ? 'rgba(59,130,246,0.05)' : undefined,
-      padding: '1px 0',
-    }}>
-      <label style={{
-        width: 140, minWidth: 140, fontSize: '0.75rem', fontWeight: 500,
-        color: 'var(--muted-foreground)', textAlign: 'right', paddingRight: 8,
-        flexShrink: 0, lineHeight: 1.3,
+    <div style={{ display: 'flex', alignItems: 'center', minHeight: INPUT_H + 2, gap: 4, marginBottom: ROW_GAP }}>
+      <span style={{
+        width: lw, minWidth: lw, fontSize: F, color: TEXT,
+        textAlign: 'right', paddingRight: 4, flexShrink: 0, lineHeight: '1',
       }}>
         {label}
-      </label>
-      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+      </span>
+      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+        {children}
+      </div>
     </div>
   )
 }
 
-const inputStyle: React.CSSProperties = {
-  width: '100%', height: 26, padding: '0 6px',
-  border: '1px solid var(--border)', borderRadius: 2,
-  fontSize: '0.8125rem', background: 'var(--input)',
-  color: 'var(--foreground)', outline: 'none', fontFamily: 'inherit',
-}
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  paddingRight: 20,
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236B7280'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 6px center',
-  appearance: 'none', WebkitAppearance: 'none',
-}
-const readonlyStyle: React.CSSProperties = {
-  ...inputStyle, background: 'var(--secondary)', color: 'var(--muted-foreground)', cursor: 'default',
-}
-
-function Sel({ value, onChange, options, placeholder = 'Select…', loading = false }: {
-  value: string; onChange: (v: string, label?: string) => void
-  options: HisOption[]; placeholder?: string; loading?: boolean
+/** Simple dropdown fed by an array of Opt */
+function Dropdown({
+  value, onChange, options, placeholder = '', loading = false, disabled = false,
+}: {
+  value: string
+  onChange: (id: string, name: string) => void
+  options: Opt[]
+  placeholder?: string
+  loading?: boolean
+  disabled?: boolean
 }) {
   return (
     <select
-      style={selectStyle}
+      style={{ ...sel, color: value ? TEXT : MUTED, opacity: disabled ? 0.5 : 1 }}
       value={value}
+      disabled={disabled}
       onChange={e => {
-        const opt = options.find(o => o.id === e.target.value)
-        onChange(e.target.value, opt?.name)
+        const o = options.find(x => x.id === e.target.value)
+        onChange(e.target.value, o?.name ?? '')
       }}
     >
       <option value="">{loading ? 'Loading…' : placeholder}</option>
-      {!loading && options.length === 0 && <option disabled>No items found</option>}
+      {!loading && options.length === 0 && <option disabled value="">No items found</option>}
       {options.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
     </select>
   )
 }
 
-function BtnSmall({ onClick, children, variant = 'secondary', disabled = false }: {
-  onClick?: () => void; children: React.ReactNode
-  variant?: 'primary' | 'secondary' | 'danger'; disabled?: boolean
-}) {
-  const bg = variant === 'primary' ? 'var(--primary)' : variant === 'danger' ? '#8B2500' : 'var(--secondary)'
-  const color = variant === 'secondary' ? 'var(--foreground)' : '#FFFFFF'
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        height: 26, padding: '0 12px', borderRadius: 2, fontSize: '0.8125rem',
-        fontFamily: 'inherit', cursor: disabled ? 'not-allowed' : 'pointer',
-        background: bg, color, border: `1px solid ${variant === 'secondary' ? 'var(--border)' : bg}`,
-        opacity: disabled ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', gap: 4,
-        transition: 'background 0.12s', whiteSpace: 'nowrap',
-      }}
-    >
-      {children}
-    </button>
-  )
-}
-
-// ─── Quote Items Table ─────────────────────────────────────────────────────────
-
-function QuoteItemsTable({
-  items, onUpdate, onDelete, onAdd, readOnly,
-}: {
-  items: QuoteItem[]
-  onUpdate: (key: string, field: 'unit' | 'discount', value: number) => void
-  onDelete: (key: string) => void
-  onAdd: () => void
-  readOnly: boolean
-}) {
-  const total = items.reduce((s, r) => s + r.netAmount, 0)
-  return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 3, background: '#FFF', overflow: 'hidden' }}>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem', minWidth: 700 }}>
-          <thead>
-            <tr style={{ background: 'var(--secondary)', borderBottom: '1px solid var(--border)' }}>
-              {['Department','Type','Code','Description','Unit','Price','Amount','Discount','Net Amount'].map(h => (
-                <th key={h} style={{
-                  padding: '4px 8px', textAlign: h === 'Unit' || h === 'Price' || h === 'Amount' || h === 'Discount' || h === 'Net Amount' ? 'right' : 'left',
-                  fontSize: '0.6875rem', fontWeight: 600, color: 'var(--muted-foreground)',
-                  textTransform: 'uppercase', letterSpacing: '0.05em',
-                  borderRight: '1px solid var(--border)', whiteSpace: 'nowrap',
-                }}>
-                  {h}
-                </th>
-              ))}
-              {!readOnly && <th style={{ padding: '4px 6px', width: 28 }} />}
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={10} style={{ padding: '20px', textAlign: 'center', color: 'var(--muted-foreground)', fontSize: '0.8125rem' }}>
-                  No items — click Apply to load pricing from HIS, or Add Item to enter manually.
-                </td>
-              </tr>
-            )}
-            {items.map((row, idx) => (
-              <tr key={row._key} style={{ background: idx % 2 === 1 ? 'var(--secondary)' : undefined, borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '3px 8px', borderRight: '1px solid #f0f0f0' }}>{row.department || '—'}</td>
-                <td style={{ padding: '3px 8px', borderRight: '1px solid #f0f0f0', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{row.type || '—'}</td>
-                <td style={{ padding: '3px 8px', borderRight: '1px solid #f0f0f0', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{row.code}</td>
-                <td style={{ padding: '3px 8px', borderRight: '1px solid #f0f0f0' }}>{row.description}</td>
-                <td style={{ padding: '3px 4px', textAlign: 'right', borderRight: '1px solid #f0f0f0', width: 60 }}>
-                  {readOnly ? row.unit : (
-                    <input
-                      type="number" min={1} value={row.unit}
-                      onChange={e => onUpdate(row._key, 'unit', Math.max(1, parseInt(e.target.value) || 1))}
-                      style={{ ...inputStyle, width: 52, textAlign: 'right', height: 22 }}
-                    />
-                  )}
-                </td>
-                <td style={{ padding: '3px 8px', textAlign: 'right', borderRight: '1px solid #f0f0f0', fontVariantNumeric: 'tabular-nums' }}>
-                  {row.price.toFixed(2)}
-                </td>
-                <td style={{ padding: '3px 8px', textAlign: 'right', borderRight: '1px solid #f0f0f0', fontVariantNumeric: 'tabular-nums' }}>
-                  {row.amount.toFixed(2)}
-                </td>
-                <td style={{ padding: '3px 4px', textAlign: 'right', borderRight: '1px solid #f0f0f0', width: 80 }}>
-                  {readOnly ? row.discount.toFixed(2) : (
-                    <input
-                      type="number" min={0} value={row.discount}
-                      onChange={e => onUpdate(row._key, 'discount', Math.max(0, parseFloat(e.target.value) || 0))}
-                      style={{ ...inputStyle, width: 72, textAlign: 'right', height: 22 }}
-                    />
-                  )}
-                </td>
-                <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                  {row.netAmount.toFixed(2)}
-                </td>
-                {!readOnly && (
-                  <td style={{ padding: '3px 4px', textAlign: 'center' }}>
-                    <button onClick={() => onDelete(row._key)}
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 12, lineHeight: 1 }}
-                    >×</button>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr style={{ background: 'var(--secondary)', borderTop: '2px solid var(--border)' }}>
-              <td colSpan={8} style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600, fontSize: '0.8125rem' }}>
-                Total Net Amount
-              </td>
-              <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: '0.875rem' }}>
-                {total.toFixed(2)}
-              </td>
-              {!readOnly && <td />}
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      {!readOnly && (
-        <div style={{ padding: '6px 10px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-          <BtnSmall onClick={onAdd}>
-            <i className="fas fa-plus" style={{ fontSize: '0.625rem' }} /> Add Item
-          </BtnSmall>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Bottom list panel ─────────────────────────────────────────────────────────
-
-function QuoteListPanel({ onOpen }: { onOpen: (id: string) => void }) {
-  const [dateFrom, setDateFrom]   = useState('')
-  const [dateTo, setDateTo]       = useState('')
-  const [statusF, setStatusF]     = useState('')
-  const [cpiF, setCpiF]           = useState('')
-  const [rows, setRows]           = useState<Record<string, string>[]>([])
-  const [loading, setLoading]     = useState(false)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const sp = new URLSearchParams()
-      if (dateFrom) sp.set('dateFrom', dateFrom)
-      if (dateTo)   sp.set('dateTo', dateTo)
-      if (statusF)  sp.set('status', statusF)
-      if (cpiF)     sp.set('cpi', cpiF)
-      const res = await fetch(`/api/billing/quotes?${sp}`)
-      const data = await res.json()
-      setRows(Array.isArray(data) ? data : [])
-    } catch { toast.error('Could not load quotes.') }
-    finally { setLoading(false) }
-  }, [dateFrom, dateTo, statusF, cpiF])
-
-  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const STATUS_BADGE: Record<string, string> = {
-    DRAFT: '#6B6B6B', FINALISED: '#1D4E89', GOP_CREATED: '#2D6A4F',
-  }
-
-  return (
-    <div style={{ border: '1px solid var(--border)', borderRadius: 3, background: '#FFF', overflow: 'hidden' }}>
-      {/* Filter bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-        padding: '8px 12px', background: 'var(--secondary)', borderBottom: '1px solid var(--border)',
-      }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>From</span>
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-          style={{ height: 24, padding: '0 5px', border: '1px solid var(--border)', borderRadius: 2, fontSize: '0.8125rem', width: 128 }} />
-        <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>To</span>
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-          style={{ height: 24, padding: '0 5px', border: '1px solid var(--border)', borderRadius: 2, fontSize: '0.8125rem', width: 128 }} />
-        <select value={statusF} onChange={e => setStatusF(e.target.value)}
-          style={{ ...selectStyle, height: 24, width: 120 }}>
-          <option value="">All Statuses</option>
-          <option value="DRAFT">Draft</option>
-          <option value="FINALISED">Finalised</option>
-          <option value="GOP_CREATED">GOP Created</option>
-        </select>
-        <input placeholder="CPI / Patient…" value={cpiF} onChange={e => setCpiF(e.target.value)}
-          style={{ height: 24, padding: '0 6px', border: '1px solid var(--border)', borderRadius: 2, fontSize: '0.8125rem', width: 140 }} />
-        <BtnSmall onClick={load} variant="primary">
-          <i className="fas fa-filter" style={{ fontSize: '0.625rem' }} /> Filter
-        </BtnSmall>
-        <BtnSmall onClick={() => { setDateFrom(''); setDateTo(''); setStatusF(''); setCpiF(''); setTimeout(load, 0) }}>
-          Clear
-        </BtnSmall>
-        <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-          {loading ? 'Loading…' : `${rows.length} record${rows.length !== 1 ? 's' : ''}`}
-        </span>
-      </div>
-
-      {/* Results table */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8125rem', minWidth: 700 }}>
-          <thead>
-            <tr style={{ background: 'var(--secondary)', borderBottom: '1px solid var(--border)' }}>
-              {['Quote No.','Net Amt.','Quote Date','CPI','Patient Name','Phone','User','Status',''].map(h => (
-                <th key={h} style={{
-                  padding: '4px 8px', textAlign: 'left', fontSize: '0.6875rem',
-                  fontWeight: 600, color: 'var(--muted-foreground)', textTransform: 'uppercase',
-                  letterSpacing: '0.05em', borderRight: '1px solid var(--border)', whiteSpace: 'nowrap',
-                }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && !loading && (
-              <tr><td colSpan={9} style={{ padding: '20px', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                No quotes found. Use the filter above or create a new quote.
-              </td></tr>
-            )}
-            {rows.map((r, idx) => (
-              <tr key={r.id as string}
-                style={{ background: idx % 2 === 1 ? 'var(--secondary)' : undefined, borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
-                onClick={() => onOpen(r.id as string)}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(91,95,255,0.06)')}
-                onMouseLeave={e => (e.currentTarget.style.background = idx % 2 === 1 ? 'var(--secondary)' : '')}
-              >
-                <td style={{ padding: '3px 8px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, borderRight: '1px solid #f0f0f0' }}>{r.quoteNumber}</td>
-                <td style={{ padding: '3px 8px', fontVariantNumeric: 'tabular-nums', fontWeight: 500, borderRight: '1px solid #f0f0f0' }}>{Number(r.totalNetAmount).toFixed(2)}</td>
-                <td style={{ padding: '3px 8px', borderRight: '1px solid #f0f0f0', fontSize: '0.75rem' }}>{r.quoteDate ? String(r.quoteDate).slice(0, 10) : '—'}</td>
-                <td style={{ padding: '3px 8px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', borderRight: '1px solid #f0f0f0' }}>{r.cpiId || '—'}</td>
-                <td style={{ padding: '3px 8px', fontWeight: 500, borderRight: '1px solid #f0f0f0' }}>{r.patientName}</td>
-                <td style={{ padding: '3px 8px', fontSize: '0.75rem', color: 'var(--muted-foreground)', borderRight: '1px solid #f0f0f0' }}>{r.phoneNumber || '—'}</td>
-                <td style={{ padding: '3px 8px', fontSize: '0.75rem', color: 'var(--muted-foreground)', borderRight: '1px solid #f0f0f0' }}>{r.createdByName || '—'}</td>
-                <td style={{ padding: '3px 8px', borderRight: '1px solid #f0f0f0' }}>
-                  <span style={{
-                    display: 'inline-block', padding: '1px 7px', borderRadius: 2,
-                    fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase',
-                    color: '#FFFFFF', background: STATUS_BADGE[r.status as string] ?? '#6B6B6B',
-                  }}>
-                    {r.status}
-                  </span>
-                </td>
-                <td style={{ padding: '3px 6px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>Open →</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-// ─── Main billing form ─────────────────────────────────────────────────────────
-
+// ─── Main component ───────────────────────────────────────────────────────────
 export function BillingForm() {
   const { data: session } = useSession()
   const router = useRouter()
 
-  // ── Quote identity
-  const [quoteId, setQuoteId]           = useState<string | null>(null)
-  const [quoteNumber, setQuoteNumber]   = useState('')
-  const [quoteStatus, setQuoteStatus]   = useState<'DRAFT'|'FINALISED'|'GOP_CREATED'>('DRAFT')
-  const [quoteDate, setQuoteDate]       = useState(() => new Date().toISOString().slice(0, 10))
+  // ── Quote metadata
+  const [quoteId,     setQuoteId]     = useState<string | null>(null)
+  const [quoteNum,    setQuoteNum]    = useState('')
+  const [quoteDate,   setQuoteDate]   = useState(() => new Date().toISOString().slice(0, 10))
+  const [quoteStat,   setQuoteStat]   = useState<'DRAFT'|'FINALISED'|'GOP_CREATED'>('DRAFT')
 
   // ── Patient fields
-  const [cpiInput, setCpiInput]         = useState('')
-  const [cpiId, setCpiId]               = useState('')
-  const [patientName, setPatientName]   = useState('')
-  const [dob, setDob]                   = useState('')
-  const [gender, setGender]             = useState('')
-  const [phone, setPhone]               = useState('')
+  const [cpiRaw,      setCpiRaw]      = useState('')    // what the user types
+  const [cpiId,       setCpiId]       = useState('')
+  const [patName,     setPatName]     = useState('')
+  const [dob,         setDob]         = useState('')
+  const [gender,      setGender]      = useState('')
+  const [phone,       setPhone]       = useState('')
 
   // ── Clinical fields
-  const [deptId, setDeptId]             = useState('')
-  const [deptName, setDeptName]         = useState('')
-  const [doctorId, setDoctorId]         = useState('')
-  const [doctorName, setDoctorName]     = useState('')
-  const [los, setLos]                   = useState('')
-  const [procCode, setProcCode]         = useState('')
-  const [procName, setProcName]         = useState('')
-  const [diagCode, setDiagCode]         = useState('')
-  const [diagDesc, setDiagDesc]         = useState('')
-  const [diagQuery, setDiagQuery]       = useState('')
-  const [diagResults, setDiagResults]   = useState<HisDiagnosis[]>([])
-  const [showDiagDrop, setShowDiagDrop] = useState(false)
-  const [provDiag, setProvDiag]         = useState('')
-  const [orderSetId, setOrderSetId]     = useState('')
-  const [orderSetName, setOrderSetName] = useState('')
+  const [deptId,      setDeptId]      = useState('')
+  const [deptName,    setDeptName]    = useState('')
+  const [doctorId,    setDoctorId]    = useState('')
+  const [doctorName,  setDoctorName]  = useState('')
+  const [los,         setLos]         = useState('')
+  const [procCode,    setProcCode]    = useState('')
+  const [procName,    setProcName]    = useState('')
+  const [diagCode,    setDiagCode]    = useState('')
+  const [diagDesc,    setDiagDesc]    = useState('')
+  const [diagInput,   setDiagInput]   = useState('')    // typed text for type-ahead
+  const [diagDrop,    setDiagDrop]    = useState<Diag[]>([])
+  const [showDiag,    setShowDiag]    = useState(false)
+  const [provDiag,    setProvDiag]    = useState('')
+  const [orderSetId,  setOrderSetId]  = useState('')
+  const [orderSetNm,  setOrderSetNm]  = useState('')
 
-  // ── Pricing fields
-  const [pricingType, setPricingType]   = useState<'NORMAL'|'DIFFERENT'>('NORMAL')
+  // ── Pricing / insurance fields
+  const [normalPricing, setNormalPricing] = useState(true)
   const [diffPricingId, setDiffPricingId] = useState('')
-  const [employerId, setEmployerId]     = useState('')
-  const [employerName, setEmployerName] = useState('')
-  const [insurerId, setInsurerId]       = useState('')
-  const [insurerName, setInsurerName]   = useState('')
-  const [discPkgId, setDiscPkgId]       = useState('')
-  const [discPkgName, setDiscPkgName]   = useState('')
-  const [mktPkgId, setMktPkgId]         = useState('')
-  const [mktPkgName, setMktPkgName]     = useState('')
+  const [diffPricingNm, setDiffPricingNm] = useState('')
+  const [employerId,  setEmployerId]  = useState('')
+  const [employerNm,  setEmployerNm]  = useState('')
+  const [discPkgId,   setDiscPkgId]   = useState('')
+  const [discPkgNm,   setDiscPkgNm]   = useState('')
+  const [insId,       setInsId]       = useState('')
+  const [insName,     setInsName]     = useState('')
+  const [mktPkgId,    setMktPkgId]    = useState('')
+  const [mktPkgNm,    setMktPkgNm]    = useState('')
 
   // ── HIS dropdown data
-  const [departments, setDepartments]   = useState<HisOption[]>([])
-  const [doctors, setDoctors]           = useState<HisDoctor[]>([])
-  const [procedures, setProcedures]     = useState<HisProcedure[]>([])
-  const [orderSets, setOrderSets]       = useState<HisOption[]>([])
-  const [employers, setEmployers]       = useState<HisOption[]>([])
-  const [insurers, setInsurers]         = useState<HisOption[]>([])
-  const [discPkgs, setDiscPkgs]         = useState<HisOption[]>([])
-  const [mktPkgs, setMktPkgs]           = useState<HisOption[]>([])
-  const [loading, setLoading]           = useState<Record<string, boolean>>({})
+  const [depts,     setDepts]     = useState<Opt[]>([])
+  const [doctors,   setDoctors]   = useState<Doc[]>([])
+  const [procs,     setProcs]     = useState<Proc[]>([])
+  const [orderSets, setOrderSets] = useState<Opt[]>([])
+  const [employers, setEmployers] = useState<Opt[]>([])
+  const [insurers,  setInsurers]  = useState<Opt[]>([])
+  const [discPkgs,  setDiscPkgs]  = useState<Opt[]>([])
+  const [mktPkgs,   setMktPkgs]   = useState<Opt[]>([])
+  const [dropLoading, setDropLoading] = useState(true)
+
+  // ── CPI search
+  const [cpiResults, setCpiResults] = useState<CpiResult[]>([])
+  const [showCpi,    setShowCpi]    = useState(false)
+  const [cpiLoading, setCpiLoading] = useState(false)
+  const cpiTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Quote items
-  const [items, setItems]               = useState<QuoteItem[]>([])
-  const keyRef                          = useRef(0)
+  const [rows,  setRows]  = useState<QuoteRow[]>([])
+  const keyRef = useRef(0)
+  const totalNet = rows.reduce((s, r) => s + r.netAmount, 0)
 
-  // ── CPI search state
-  const [cpiResults, setCpiResults]     = useState<PatientResult[]>([])
-  const [showCpiDrop, setShowCpiDrop]   = useState(false)
-  const [cpiLoading, setCpiLoading]     = useState(false)
-  const cpiDebounce                     = useRef<ReturnType<typeof setTimeout>|null>(null)
+  // ── Bottom list panel
+  const [listFrom,   setListFrom]   = useState(() => new Date().toISOString().slice(0, 10))
+  const [listTo,     setListTo]     = useState(() => new Date().toISOString().slice(0, 10))
+  const [listRows,   setListRows]   = useState<Record<string, string>[]>([])
+  const [listCount,  setListCount]  = useState(0)
+  const [listLoading, setListLoading] = useState(false)
 
-  // ── Async op states
-  const [saving, setSaving]             = useState(false)
-  const [applyLoading, setApplyLoading] = useState(false)
-  const [gopLoading, setGopLoading]     = useState(false)
+  // ── Op loading states
+  const [applying, setApplying] = useState(false)
+  const [saving,   setSaving]   = useState(false)
+  const [gopBusy,  setGopBusy]  = useState(false)
 
-  const readOnly = quoteStatus !== 'DRAFT'
-  const age = dob ? Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 3600 * 1000)) : null
-  const totalNet = items.reduce((s, r) => s + r.netAmount, 0)
-  const isGopEligible = ['AIA','ASSURNET'].some(n => insurerName.toUpperCase().includes(n))
+  const readOnly  = quoteStat !== 'DRAFT'
+  const age       = dob ? Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 86400000)) : ''
+  const isGopEligible = ['AIA','ASSURNET'].some(n => insName.toUpperCase().includes(n))
+  const userName  = session?.user?.name ?? session?.user?.email ?? ''
 
-  // ── Helper: timeout-safe fetch from HIS endpoint
+  // ── Timeout-safe HIS fetch
   const hisFetch = useCallback(async (url: string): Promise<unknown[] | null> => {
     const ctrl = new AbortController()
-    const timeout = setTimeout(() => ctrl.abort(), 5000)
+    const t = setTimeout(() => ctrl.abort(), 5000)
     try {
-      const res = await fetch(url, { signal: ctrl.signal })
-      const data = await res.json()
-      if (data.offline) return null
-      return Array.isArray(data) ? data : (data.results ?? [])
+      const r = await fetch(url, { signal: ctrl.signal })
+      const d = await r.json()
+      if (d.offline) return null
+      return Array.isArray(d) ? d : (d.results ?? [])
     } catch { return null }
-    finally { clearTimeout(timeout) }
+    finally { clearTimeout(t) }
   }, [])
 
   // ── Load all static dropdowns on mount
   useEffect(() => {
     const load = async () => {
-      setLoading(prev => ({ ...prev, all: true }))
-      const [depts, docs, sets, emps, ins, disc, mkt] = await Promise.all([
+      setDropLoading(true)
+      const [dp, dc, os, em, ins, disc, mkt] = await Promise.all([
         hisFetch('/api/his/departments'),
         hisFetch('/api/his/doctors'),
         hisFetch('/api/his/doctor-order-sets'),
@@ -441,239 +247,233 @@ export function BillingForm() {
         hisFetch('/api/his/discount-packages'),
         hisFetch('/api/his/marketing-packages'),
       ])
-      if (depts) setDepartments(depts as HisOption[])
-      if (docs)  setDoctors(docs as HisDoctor[])
-      if (sets)  setOrderSets(sets as HisOption[])
-      if (emps)  setEmployers(emps as HisOption[])
-      if (ins)   setInsurers(ins as HisOption[])
-      if (disc)  setDiscPkgs(disc as HisOption[])
-      if (mkt)   setMktPkgs(mkt as HisOption[])
-      setLoading(prev => ({ ...prev, all: false }))
+      if (dp)   setDepts(dp as Opt[])
+      if (dc)   setDoctors(dc as Doc[])
+      if (os)   setOrderSets(os as Opt[])
+      if (em)   setEmployers(em as Opt[])
+      if (ins)  setInsurers(ins as Opt[])
+      if (disc) setDiscPkgs(disc as Opt[])
+      if (mkt)  setMktPkgs(mkt as Opt[])
+      setDropLoading(false)
     }
     load()
   }, [hisFetch])
 
-  // ── Load procedures when department changes
+  // ── Reload procedures when department changes
   useEffect(() => {
-    if (!deptId) { setProcedures([]); return }
-    setLoading(prev => ({ ...prev, procs: true }))
+    if (!deptId) { setProcs([]); return }
     hisFetch(`/api/his/procedures?department=${encodeURIComponent(deptId)}`)
-      .then(r => { if (r) setProcedures(r as HisProcedure[]) })
-      .finally(() => setLoading(prev => ({ ...prev, procs: false })))
+      .then(r => { if (r) setProcs(r as Proc[]) })
   }, [deptId, hisFetch])
 
   // ── CPI debounced search
-  const handleCpiInput = (v: string) => {
-    setCpiInput(v)
-    setShowCpiDrop(true)
-    if (cpiDebounce.current) clearTimeout(cpiDebounce.current)
-    if (v.length < 2) { setCpiResults([]); return }
+  const handleCpiSearch = useCallback((q: string) => {
+    setCpiRaw(q)
+    setShowCpi(true)
+    if (cpiTimer.current) clearTimeout(cpiTimer.current)
+    if (q.length < 2) { setCpiResults([]); return }
     setCpiLoading(true)
-    cpiDebounce.current = setTimeout(async () => {
+    cpiTimer.current = setTimeout(async () => {
       const ctrl = new AbortController()
       setTimeout(() => ctrl.abort(), 5000)
       try {
-        const res = await fetch(`/api/his/patients?q=${encodeURIComponent(v)}`, { signal: ctrl.signal })
-        const data = await res.json()
-        setCpiResults(Array.isArray(data) ? data : (data.results ?? []))
+        const r = await fetch(`/api/his/patients?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        const d = await r.json()
+        setCpiResults(Array.isArray(d) ? d : (d.results ?? []))
       } catch { setCpiResults([]) }
       finally { setCpiLoading(false) }
     }, 350)
+  }, [])
+
+  const handleCpiKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleCpiSearch(cpiRaw)
   }
 
-  const handleCpiSelect = async (pt: PatientResult) => {
-    setCpiInput(pt.fullName)
+  const handleCpiSelect = async (pt: CpiResult) => {
+    setCpiRaw(pt.fullName)
     setCpiId(pt.patientId)
-    setPatientName(pt.fullName)
+    setPatName(pt.fullName)
     setDob(pt.dob)
-    setShowCpiDrop(false)
-    // Load insurance
+    setShowCpi(false)
+    // Also fetch insurance data to pre-fill insurer field
     const ctrl = new AbortController()
     setTimeout(() => ctrl.abort(), 5000)
     try {
-      const res = await fetch(`/api/his/patient?nric=${encodeURIComponent(pt.nric)}`, { signal: ctrl.signal })
-      const data = await res.json()
-      if (data.found) {
-        if (data.patient?.contactNumber) setPhone(data.patient.contactNumber)
-        if (data.insurance?.policyNumber) {
-          // auto-select insurer if code matches
-          const code = data.insurance.insurerCode?.toUpperCase() ?? ''
-          const match = insurers.find(i => i.name.toUpperCase().includes(code) || code.includes(i.name.toUpperCase()))
-          if (match) { setInsurerId(match.id); setInsurerName(match.name) }
+      const r = await fetch(`/api/his/patient?nric=${encodeURIComponent(pt.nric)}`, { signal: ctrl.signal })
+      const d = await r.json()
+      if (d.found) {
+        if (d.patient?.contactNumber) setPhone(d.patient.contactNumber)
+        if (d.patient?.gender) setGender(d.patient.gender)
+        if (d.insurance?.insurerCode) {
+          const match = insurers.find(i => i.name.toUpperCase().includes(d.insurance.insurerCode.toUpperCase()))
+          if (match) { setInsId(match.id); setInsName(match.name) }
         }
       }
-    } catch { /* silent */ }
+    } catch { /* silent — patient fields already filled */ }
   }
 
   // ── Diagnosis type-ahead
   useEffect(() => {
-    if (diagQuery.length < 2) { setDiagResults([]); return }
+    if (diagInput.length < 2) { setDiagDrop([]); return }
     const t = setTimeout(async () => {
       const ctrl = new AbortController()
       setTimeout(() => ctrl.abort(), 5000)
       try {
-        const res = await fetch(`/api/his/diagnosis?q=${encodeURIComponent(diagQuery)}`, { signal: ctrl.signal })
-        const data = await res.json()
-        setDiagResults(Array.isArray(data) ? data : (data.results ?? []))
-      } catch { setDiagResults([]) }
+        const r = await fetch(`/api/his/diagnosis?q=${encodeURIComponent(diagInput)}`, { signal: ctrl.signal })
+        const d = await r.json()
+        setDiagDrop(Array.isArray(d) ? d : (d.results ?? []))
+      } catch { setDiagDrop([]) }
     }, 350)
     return () => clearTimeout(t)
-  }, [diagQuery])
+  }, [diagInput])
 
-  // ── Apply — load pricing from HIS and populate items
+  // ── Apply — load pricing items from HIS
   const handleApply = async () => {
-    setApplyLoading(true)
+    setApplying(true)
     try {
-      const params = new URLSearchParams({
-        type: pricingType.toLowerCase(),
-        ...(insurerId ? { insurerId } : {}),
-        ...(procCode  ? { procedureCode: procCode } : {}),
-        ...(deptId    ? { deptId } : {}),
+      const p = new URLSearchParams({
+        type:  normalPricing ? 'normal' : 'different',
+        ...(insId    ? { insurerId:     insId    } : {}),
+        ...(procCode ? { procedureCode: procCode } : {}),
+        ...(deptId   ? { deptId }                  : {}),
       })
-      const res = await fetch(`/api/his/pricing?${params}`)
-      const data = await res.json()
-      if (data.offline) {
-        toast.error('HIS is offline — pricing cannot be loaded. Please enter items manually.')
-        return
-      }
-      const priceItems: HisPriceItem[] = Array.isArray(data) ? data : []
-      if (priceItems.length === 0) {
-        toast('No pricing items found for the selected criteria.')
-        return
-      }
-      const newItems: QuoteItem[] = priceItems.map(p => {
-        const amt = p.unitPrice
-        return {
-          _key: String(++keyRef.current),
-          department: p.department ?? deptName,
-          type:        p.type ?? '',
-          code:        p.code,
-          description: p.description,
-          unit: 1,
-          price: p.unitPrice,
-          amount: amt,
-          discount: 0,
-          netAmount: amt,
-        }
-      })
-      setItems(prev => [...prev, ...newItems])
-      toast.success(`${newItems.length} pricing item${newItems.length !== 1 ? 's' : ''} loaded from HIS.`)
-    } catch {
-      toast.error('Failed to load pricing from HIS.')
-    } finally { setApplyLoading(false) }
+      const r = await fetch(`/api/his/pricing?${p}`)
+      const d = await r.json()
+      if (d.offline) { toast.error('HIS offline — enter items manually.'); return }
+      const items: PriceItem[] = Array.isArray(d) ? d : []
+      if (!items.length) { toast('No pricing items found for selected criteria.'); return }
+      const newRows: QuoteRow[] = items.map(it => ({
+        _k: String(++keyRef.current),
+        department: it.department ?? deptName,
+        type:        it.type ?? '',
+        code:        it.code,
+        description: it.description,
+        unit: 1, price: it.unitPrice, amount: it.unitPrice, discount: 0, netAmount: it.unitPrice,
+      }))
+      setRows(prev => [...prev, ...newRows])
+      toast.success(`${newRows.length} item${newRows.length !== 1 ? 's' : ''} loaded from HIS.`)
+      // Auto-save
+      await doSave([...rows, ...newRows])
+    } catch { toast.error('Failed to load pricing from HIS.') }
+    finally { setApplying(false) }
   }
 
-  // ── Update item unit or discount
-  const handleItemUpdate = (key: string, field: 'unit' | 'discount', value: number) => {
-    setItems(prev => prev.map(r => {
-      if (r._key !== key) return r
-      const unit     = field === 'unit'     ? value : r.unit
-      const discount = field === 'discount' ? value : r.discount
+  // ── Row updates (unit / discount editable)
+  const updateRow = (k: string, field: 'unit'|'discount', raw: string) => {
+    const v = Math.max(0, parseFloat(raw) || 0)
+    setRows(prev => prev.map(r => {
+      if (r._k !== k) return r
+      const unit     = field === 'unit'     ? Math.max(1, v) : r.unit
+      const discount = field === 'discount' ? v              : r.discount
       const amount   = unit * r.price
       return { ...r, unit, discount, amount, netAmount: Math.max(0, amount - discount) }
     }))
   }
 
-  // ── Add blank item manually
-  const handleAddItem = () => {
-    setItems(prev => [...prev, {
-      _key: String(++keyRef.current),
-      department: deptName, type: '', code: '', description: 'Manual item',
-      unit: 1, price: 0, amount: 0, discount: 0, netAmount: 0,
-    }])
-  }
+  // ── Save quote
+  const buildBody = (itemOverride?: QuoteRow[]) => ({
+    cpiId, patientName: patName,
+    dob: dob || null, gender: gender || null, phoneNumber: phone || null,
+    departmentId: deptId || null, departmentName: deptName || null,
+    attendingDoctorId: doctorId || null, attendingDoctorName: doctorName || null,
+    lengthOfStay: los ? parseInt(los) : null,
+    procedureCode: procCode || null, procedureName: procName || null,
+    diagnosisCode: diagCode || null, diagnosisDescription: diagDesc || null,
+    provisionalDiagnosis: provDiag || null,
+    doctorOrderSetId: orderSetId || null, doctorOrderSetName: orderSetNm || null,
+    pricingType: normalPricing ? 'NORMAL' : 'DIFFERENT',
+    differentPricingId: diffPricingId || null,
+    employerId: employerId || null, employerName: employerNm || null,
+    insurerId: insId, insurerName: insName,
+    discountPackageId: discPkgId || null, discountPackageName: discPkgNm || null,
+    marketingPackageId: mktPkgId || null, marketingPackageName: mktPkgNm || null,
+    quoteDate, totalNetAmount: (itemOverride ?? rows).reduce((s, r) => s + r.netAmount, 0),
+    items: (itemOverride ?? rows).map(({ _k, ...rest }) => rest),
+  })
 
-  // ── Save Draft
-  const handleSave = async () => {
+  const doSave = async (itemOverride?: QuoteRow[]) => {
     setSaving(true)
     try {
-      const body = {
-        cpiId, patientName, dob: dob || null, gender: gender || null, phoneNumber: phone || null,
-        departmentId: deptId || null, departmentName: deptName || null,
-        attendingDoctorId: doctorId || null, attendingDoctorName: doctorName || null,
-        lengthOfStay: los ? parseInt(los) : null,
-        procedureCode: procCode || null, procedureName: procName || null,
-        diagnosisCode: diagCode || null, diagnosisDescription: diagDesc || null,
-        provisionalDiagnosis: provDiag || null,
-        doctorOrderSetId: orderSetId || null, doctorOrderSetName: orderSetName || null,
-        pricingType, differentPricingId: diffPricingId || null,
-        employerId: employerId || null, employerName: employerName || null,
-        insurerId, insurerName,
-        discountPackageId: discPkgId || null, discountPackageName: discPkgName || null,
-        marketingPackageId: mktPkgId || null, marketingPackageName: mktPkgName || null,
-        quoteDate, totalNetAmount: totalNet,
-        items: items.map(({ _key, ...rest }) => rest),
-      }
-
+      const body = buildBody(itemOverride)
       if (quoteId) {
-        await fetch(`/api/billing/quotes/${quoteId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        toast.success('Quote saved.')
+        await fetch(`/api/billing/quotes/${quoteId}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
       } else {
-        const res  = await fetch('/api/billing/quotes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error)
-        setQuoteId(data.id)
-        setQuoteNumber(data.quoteNumber)
-        toast.success(`Quote ${data.quoteNumber} created.`)
+        const r = await fetch('/api/billing/quotes', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        const d = await r.json()
+        if (!r.ok) throw new Error(d.error)
+        setQuoteId(d.id); setQuoteNum(d.quoteNumber)
       }
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Failed to save quote.')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Save failed.')
     } finally { setSaving(false) }
   }
 
-  // ── Finalise
-  const handleFinalise = async () => {
-    if (!quoteId) { toast.error('Save the quote first.'); return }
-    if (!confirm('Finalise this quote? Items will be locked.')) return
+  // ── Create GOP from quote
+  const handleCreateGop = async () => {
+    await doSave()
+    if (!quoteId) { toast.error('Could not save quote first.'); return }
+    setGopBusy(true)
     try {
-      const res = await fetch(`/api/billing/quotes/${quoteId}/finalise`, { method: 'PATCH' })
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error) }
-      setQuoteStatus('FINALISED')
-      toast.success('Quote finalised.')
-    } catch (e: unknown) { toast.error(e instanceof Error ? e.message : 'Failed.') }
+      const r = await fetch(`/api/billing/quotes/${quoteId}/create-gop`, { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error)
+      setQuoteStat('GOP_CREATED')
+      toast.success('GOP request created — opening form…')
+      router.push(`/gop/${d.gopRequestId}/form`)
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Failed.') }
+    finally { setGopBusy(false) }
   }
 
-  // ── Create GOP
-  const handleCreateGop = async () => {
-    if (!quoteId) { await handleSave(); return }
-    setGopLoading(true)
+  // ── Load bottom list panel
+  const handleFilter = useCallback(async () => {
+    setListLoading(true)
     try {
-      const res  = await fetch(`/api/billing/quotes/${quoteId}/create-gop`, { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setQuoteStatus('GOP_CREATED')
-      toast.success('GOP request created. Opening form…')
-      router.push(`/gop/${data.gopRequestId}/form`)
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : 'Failed to create GOP request.')
-    } finally { setGopLoading(false) }
-  }
+      const p = new URLSearchParams({ dateFrom: listFrom, dateTo: listTo })
+      const r = await fetch(`/api/billing/quotes?${p}`)
+      const d = await r.json()
+      const arr = Array.isArray(d) ? d : []
+      setListRows(arr)
+      setListCount(arr.length)
+    } catch { toast.error('Could not load quotes.') }
+    finally { setListLoading(false) }
+  }, [listFrom, listTo])
+
+  // Load on mount
+  useEffect(() => { handleFilter() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Open quote from list
   const handleOpenQuote = async (id: string) => {
     try {
-      const res  = await fetch(`/api/billing/quotes/${id}`)
-      const data = await res.json()
-      setQuoteId(data.id); setQuoteNumber(data.quoteNumber)
-      setQuoteStatus(data.status); setQuoteDate(data.quoteDate?.slice(0, 10) ?? '')
-      setCpiId(data.cpiId ?? ''); setCpiInput(data.patientName ?? '')
-      setPatientName(data.patientName ?? ''); setDob(data.dob?.slice(0, 10) ?? '')
-      setGender(data.gender ?? ''); setPhone(data.phoneNumber ?? '')
-      setDeptId(data.departmentId ?? ''); setDeptName(data.departmentName ?? '')
-      setDoctorId(data.attendingDoctorId ?? ''); setDoctorName(data.attendingDoctorName ?? '')
-      setLos(data.lengthOfStay != null ? String(data.lengthOfStay) : '')
-      setProcCode(data.procedureCode ?? ''); setProcName(data.procedureName ?? '')
-      setDiagCode(data.diagnosisCode ?? ''); setDiagDesc(data.diagnosisDescription ?? '')
-      setProvDiag(data.provisionalDiagnosis ?? '')
-      setOrderSetId(data.doctorOrderSetId ?? ''); setOrderSetName(data.doctorOrderSetName ?? '')
-      setPricingType(data.pricingType === 'DIFFERENT' ? 'DIFFERENT' : 'NORMAL')
-      setDiffPricingId(data.differentPricingId ?? '')
-      setEmployerId(data.employerId ?? ''); setEmployerName(data.employerName ?? '')
-      setInsurerId(data.insurerId ?? ''); setInsurerName(data.insurerName ?? '')
-      setDiscPkgId(data.discountPackageId ?? ''); setDiscPkgName(data.discountPackageName ?? '')
-      setMktPkgId(data.marketingPackageId ?? ''); setMktPkgName(data.marketingPackageName ?? '')
-      setItems((data.items ?? []).map((it: Record<string, unknown>, i: number) => ({
-        _key: String(++keyRef.current + i),
+      const r = await fetch(`/api/billing/quotes/${id}`)
+      const d = await r.json()
+      setQuoteId(d.id); setQuoteNum(d.quoteNumber ?? '')
+      setQuoteStat(d.status ?? 'DRAFT')
+      setQuoteDate(d.quoteDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10))
+      setCpiId(d.cpiId ?? ''); setCpiRaw(d.patientName ?? '')
+      setPatName(d.patientName ?? ''); setDob(d.dob?.slice(0, 10) ?? '')
+      setGender(d.gender ?? ''); setPhone(d.phoneNumber ?? '')
+      setDeptId(d.departmentId ?? ''); setDeptName(d.departmentName ?? '')
+      setDoctorId(d.attendingDoctorId ?? ''); setDoctorName(d.attendingDoctorName ?? '')
+      setLos(d.lengthOfStay != null ? String(d.lengthOfStay) : '')
+      setProcCode(d.procedureCode ?? ''); setProcName(d.procedureName ?? '')
+      setDiagCode(d.diagnosisCode ?? ''); setDiagDesc(d.diagnosisDescription ?? '')
+      setDiagInput(d.diagnosisCode ? `${d.diagnosisCode} — ${d.diagnosisDescription}` : '')
+      setProvDiag(d.provisionalDiagnosis ?? '')
+      setOrderSetId(d.doctorOrderSetId ?? ''); setOrderSetNm(d.doctorOrderSetName ?? '')
+      setNormalPricing(d.pricingType !== 'DIFFERENT')
+      setDiffPricingId(d.differentPricingId ?? '')
+      setEmployerId(d.employerId ?? ''); setEmployerNm(d.employerName ?? '')
+      setInsId(d.insurerId ?? ''); setInsName(d.insurerName ?? '')
+      setDiscPkgId(d.discountPackageId ?? ''); setDiscPkgNm(d.discountPackageName ?? '')
+      setMktPkgId(d.marketingPackageId ?? ''); setMktPkgNm(d.marketingPackageName ?? '')
+      setRows((d.items ?? []).map((it: Record<string, unknown>, i: number) => ({
+        _k: String(++keyRef.current + i),
         department: it.department ?? '', type: it.type ?? '', code: it.code ?? '',
         description: it.description ?? '', unit: Number(it.unit ?? 1),
         price: Number(it.price ?? 0), amount: Number(it.amount ?? 0),
@@ -683,274 +483,557 @@ export function BillingForm() {
     } catch { toast.error('Failed to load quote.') }
   }
 
-  // ── Section divider
-  const SectionLabel = ({ label }: { label: string }) => (
+  // ── Reset form (new quote)
+  const resetForm = () => {
+    setQuoteId(null); setQuoteNum(''); setQuoteStat('DRAFT')
+    setQuoteDate(new Date().toISOString().slice(0, 10))
+    setCpiRaw(''); setCpiId(''); setPatName(''); setDob(''); setGender(''); setPhone('')
+    setDeptId(''); setDeptName(''); setDoctorId(''); setDoctorName('')
+    setLos(''); setProcCode(''); setProcName(''); setDiagCode(''); setDiagDesc(''); setDiagInput('')
+    setProvDiag(''); setOrderSetId(''); setOrderSetNm('')
+    setNormalPricing(true); setDiffPricingId(''); setEmployerId(''); setEmployerNm('')
+    setInsId(''); setInsName(''); setDiscPkgId(''); setDiscPkgNm(''); setMktPkgId(''); setMktPkgNm('')
+    setRows([])
+  }
+
+  // ── Shared table cell style
+  const th: React.CSSProperties = {
+    padding: '2px 6px', fontSize: 11, fontWeight: 600, textAlign: 'left',
+    background: '#EDE8DC', border: `1px solid ${BORDER}`, whiteSpace: 'nowrap',
+    color: TEXT,
+  }
+  const td: React.CSSProperties = {
+    padding: '2px 6px', fontSize: F, border: `1px solid #E0D8CC`,
+    color: TEXT, height: INPUT_H, verticalAlign: 'middle',
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  return (
     <div style={{
-      fontSize: '0.6875rem', fontWeight: 700, color: 'var(--muted-foreground)',
-      textTransform: 'uppercase', letterSpacing: '0.08em',
-      borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 4, marginTop: 10,
+      flex: 1, display: 'flex', flexDirection: 'column',
+      background: BG, fontFamily: 'system-ui,-apple-system,sans-serif',
+      fontSize: F, color: TEXT, overflow: 'hidden',
     }}>
-      {label}
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+
+        {/* ── SECTION 1: CPI search bar ─────────────────────────────── */}
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}`, padding: '5px 8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontWeight: 600, fontSize: F, flexShrink: 0 }}>CPI:</span>
+            <div style={{ position: 'relative', flex: 1, maxWidth: 380 }}>
+              <input
+                style={{ ...base, paddingRight: 28 }}
+                value={cpiRaw}
+                onChange={e => handleCpiSearch(e.target.value)}
+                onKeyDown={handleCpiKey}
+                onFocus={() => cpiResults.length && setShowCpi(true)}
+                onBlur={() => setTimeout(() => setShowCpi(false), 200)}
+                placeholder=""
+                disabled={readOnly}
+              />
+              {/* HIS-style ? search button */}
+              <button
+                onClick={() => handleCpiSearch(cpiRaw)}
+                disabled={readOnly}
+                style={{
+                  position: 'absolute', right: 0, top: 0,
+                  height: INPUT_H, width: INPUT_H,
+                  border: `1px solid ${BORDER}`, borderLeft: 'none', borderRadius: 0,
+                  background: '#D8D0C0', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 700, color: '#5B4A2E',
+                }}
+              >
+                {cpiLoading ? '…' : '?'}
+              </button>
+              {/* CPI results dropdown */}
+              {showCpi && cpiResults.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: INPUT_H, left: 0, right: 0, zIndex: 100,
+                  background: '#FFFFFF', border: `1px solid ${BORDER}`,
+                  maxHeight: 180, overflowY: 'auto',
+                  boxShadow: '2px 2px 6px rgba(44,36,22,0.15)',
+                }}>
+                  {cpiResults.map(p => (
+                    <div
+                      key={p.patientId}
+                      onMouseDown={() => handleCpiSelect(p)}
+                      style={{ padding: '3px 8px', cursor: 'pointer', fontSize: F, borderBottom: `1px solid ${BORDER}` }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#EDE8DC')}
+                      onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
+                    >
+                      <strong>{p.fullName}</strong>
+                      <span style={{ marginLeft: 8, color: MUTED, fontFamily: 'monospace' }}>{p.nric}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── SECTION 2: 3-column form ───────────────────────────────── */}
+        <div style={{
+          background: PANEL, border: `1px solid ${BORDER}`, padding: '6px 0',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 2fr',
+          gap: 0,
+        }}>
+
+          {/* LEFT COLUMN — Patient Information */}
+          <div style={{ padding: '0 8px', borderRight: `1px solid ${BORDER}` }}>
+            <Row label="Patient Name:" lw={92}>
+              <input style={readOnly ? ro : base} value={patName} onChange={e => setPatName(e.target.value)} readOnly={readOnly} />
+            </Row>
+            <Row label="DOB:" lw={92}>
+              <input type="date" style={readOnly ? ro : base} value={dob} onChange={e => setDob(e.target.value)} readOnly={readOnly} />
+            </Row>
+            <Row label="Gender:" lw={92}>
+              {readOnly
+                ? <input style={ro} value={gender} readOnly />
+                : <select style={sel} value={gender} onChange={e => setGender(e.target.value)}>
+                    <option value=""/>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                  </select>
+              }
+            </Row>
+            <Row label="Age:" lw={92}>
+              <input style={ro} value={age !== '' ? `${age}` : ''} readOnly />
+            </Row>
+            <Row label="Phone No.:" lw={92}>
+              <input style={readOnly ? ro : base} value={phone} onChange={e => setPhone(e.target.value)} readOnly={readOnly} />
+            </Row>
+            <Row label="Department:" lw={92}>
+              {readOnly
+                ? <input style={ro} value={deptName} readOnly />
+                : <Dropdown value={deptId} options={depts} loading={dropLoading}
+                    onChange={(id, nm) => { setDeptId(id); setDeptName(nm) }} />
+              }
+            </Row>
+          </div>
+
+          {/* MIDDLE COLUMN — Clinical Details */}
+          <div style={{ padding: '0 8px', borderRight: `1px solid ${BORDER}` }}>
+            <Row label="Attending Doctor:" lw={130}>
+              {readOnly
+                ? <input style={ro} value={doctorName} readOnly />
+                : <Dropdown value={doctorId}
+                    options={doctors.map(d => ({ id: d.id, name: d.specialty ? `${d.name} (${d.specialty})` : d.name }))}
+                    loading={dropLoading}
+                    onChange={(id) => {
+                      const d = doctors.find(x => x.id === id)
+                      setDoctorId(id); setDoctorName(d?.name ?? '')
+                    }} />
+              }
+            </Row>
+            <Row label="Length of Stay:" lw={130}>
+              <input type="number" min={0} style={readOnly ? ro : base} value={los} onChange={e => setLos(e.target.value)} readOnly={readOnly} placeholder="Days" />
+            </Row>
+            <Row label="Procedure:" lw={130}>
+              {readOnly
+                ? <input style={ro} value={procName} readOnly />
+                : <Dropdown value={procCode}
+                    options={procs.map(p => ({ id: p.code, name: p.name }))}
+                    placeholder={deptId ? 'Select…' : 'Select dept first'}
+                    onChange={(id, nm) => { setProcCode(id); setProcName(nm) }} />
+              }
+            </Row>
+            {/* Diagnosis — type-ahead */}
+            <Row label="Diagnosis:" lw={130}>
+              <div style={{ position: 'relative' }}>
+                <input
+                  style={readOnly ? ro : base}
+                  value={diagInput || (diagCode ? `${diagCode} — ${diagDesc}` : '')}
+                  onChange={e => { setDiagInput(e.target.value); setShowDiag(true) }}
+                  onFocus={() => setShowDiag(true)}
+                  onBlur={() => setTimeout(() => setShowDiag(false), 200)}
+                  placeholder="Code or description…"
+                  readOnly={readOnly}
+                />
+                {showDiag && diagDrop.length > 0 && (
+                  <div style={{
+                    position: 'absolute', top: INPUT_H, left: 0, right: 0, zIndex: 100,
+                    background: '#FFFFFF', border: `1px solid ${BORDER}`,
+                    maxHeight: 160, overflowY: 'auto',
+                    boxShadow: '2px 2px 6px rgba(44,36,22,0.15)',
+                  }}>
+                    {diagDrop.map(d => (
+                      <div
+                        key={d.code}
+                        onMouseDown={() => {
+                          setDiagCode(d.code); setDiagDesc(d.description)
+                          setDiagInput(''); setShowDiag(false)
+                        }}
+                        style={{ padding: '3px 8px', cursor: 'pointer', fontSize: F, borderBottom: `1px solid ${BORDER}` }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#EDE8DC')}
+                        onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
+                      >
+                        <span style={{ fontFamily: 'monospace', color: '#1D4E89', marginRight: 6 }}>{d.code}</span>
+                        {d.description}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Row>
+            <Row label="Provisional Diagnosis:" lw={130}>
+              <input style={readOnly ? ro : base} value={provDiag} onChange={e => setProvDiag(e.target.value)} readOnly={readOnly} />
+            </Row>
+            <Row label="Doctor Order Set:" lw={130}>
+              {readOnly
+                ? <input style={ro} value={orderSetNm} readOnly />
+                : <Dropdown value={orderSetId} options={orderSets} loading={dropLoading}
+                    onChange={(id, nm) => { setOrderSetId(id); setOrderSetNm(nm) }} />
+              }
+            </Row>
+          </div>
+
+          {/* RIGHT COLUMN — split into pricing (left) and quote meta (right) */}
+          <div style={{
+            padding: '0 8px',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '0 12px',
+          }}>
+            {/* Pricing left sub-column */}
+            <div>
+              {/* Normal Pricing checkbox row */}
+              <div style={{ display: 'flex', alignItems: 'center', minHeight: INPUT_H + 2, gap: 4, marginBottom: ROW_GAP }}>
+                <input
+                  type="checkbox"
+                  id="normalPricing"
+                  checked={normalPricing}
+                  onChange={e => setNormalPricing(e.target.checked)}
+                  disabled={readOnly}
+                  style={{ marginLeft: 4, cursor: readOnly ? 'default' : 'pointer', accentColor: '#5B4A2E' }}
+                />
+                <label htmlFor="normalPricing" style={{ fontSize: F, color: TEXT, cursor: readOnly ? 'default' : 'pointer', whiteSpace: 'nowrap' }}>
+                  Normal Pricing
+                </label>
+              </div>
+              <Row label="Different Pricing:" lw={124}>
+                {readOnly || normalPricing
+                  ? <input style={ro} value={diffPricingNm} readOnly />
+                  : <input style={base} value={diffPricingId}
+                      onChange={e => { setDiffPricingId(e.target.value); setDiffPricingNm(e.target.value) }}
+                      placeholder="Pricing code…" />
+                }
+              </Row>
+              <Row label="Employer:" lw={124}>
+                {readOnly
+                  ? <input style={ro} value={employerNm} readOnly />
+                  : <Dropdown value={employerId} options={employers} loading={dropLoading}
+                      onChange={(id, nm) => { setEmployerId(id); setEmployerNm(nm) }} placeholder="None" />
+                }
+              </Row>
+              <Row label="Discount Package/Membership:" lw={184}>
+                {readOnly
+                  ? <input style={ro} value={discPkgNm} readOnly />
+                  : <Dropdown value={discPkgId} options={discPkgs} loading={dropLoading}
+                      onChange={(id, nm) => { setDiscPkgId(id); setDiscPkgNm(nm) }} placeholder="None" />
+                }
+              </Row>
+              <Row label="Insurance/Company/Sponsor:" lw={172}>
+                {readOnly
+                  ? <input style={ro} value={insName} readOnly />
+                  : <Dropdown value={insId} options={insurers} loading={dropLoading}
+                      onChange={(id, nm) => { setInsId(id); setInsName(nm) }} />
+                }
+              </Row>
+              {/* Marketing Package row — also has Apply and Create GOP buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', minHeight: INPUT_H + 2, gap: 4, marginBottom: ROW_GAP }}>
+                <span style={{
+                  width: 124, minWidth: 124, fontSize: F, color: TEXT, textAlign: 'right', paddingRight: 4, flexShrink: 0,
+                }}>
+                  Marketing Package:
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {readOnly
+                    ? <input style={ro} value={mktPkgNm} readOnly />
+                    : <Dropdown value={mktPkgId} options={mktPkgs} loading={dropLoading}
+                        onChange={(id, nm) => { setMktPkgId(id); setMktPkgNm(nm) }} placeholder="None" />
+                  }
+                </div>
+              </div>
+            </div>
+
+            {/* Quote meta right sub-column */}
+            <div>
+              <Row label="Quote Number:" lw={104}>
+                <input style={ro} value={quoteNum || '(auto)'} readOnly />
+              </Row>
+              <Row label="Quote Date:" lw={104}>
+                <input type="date" style={readOnly ? ro : base} value={quoteDate} onChange={e => setQuoteDate(e.target.value)} readOnly={readOnly} />
+              </Row>
+              <Row label="Status:" lw={104}>
+                <input style={ro} value={quoteStat} readOnly />
+              </Row>
+              <Row label="User:" lw={104}>
+                <input style={ro} value={userName} readOnly />
+              </Row>
+              <Row label="Total Net Amt.:" lw={104}>
+                <input style={{ ...ro, fontWeight: 600 }} value={totalNet.toFixed(2)} readOnly />
+              </Row>
+              {/* Action buttons row — right-aligned, matches HIS "Apply" position */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
+                {!readOnly && (
+                  <>
+                    <button style={btn} onClick={resetForm}>New</button>
+                    <button style={btn} onClick={() => doSave()} disabled={saving}>
+                      {saving ? 'Saving…' : 'Save'}
+                    </button>
+                    <button style={btn} onClick={handleApply} disabled={applying}>
+                      {applying ? '…' : 'Apply'}
+                    </button>
+                    {isGopEligible && (
+                      <button style={btnPrimary} onClick={handleCreateGop} disabled={gopBusy}>
+                        {gopBusy ? '…' : 'Create GOP'}
+                      </button>
+                    )}
+                  </>
+                )}
+                {readOnly && (
+                  <button style={btn} onClick={resetForm}>New Quote</button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── SECTION 3: Quote Items Table ───────────────────────────── */}
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}` }}>
+          <div style={{ padding: '3px 8px', borderBottom: `1px solid ${BORDER}`, fontWeight: 600, fontSize: F }}>
+            Quote Items
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: F, minWidth: 600 }}>
+              <thead>
+                <tr>
+                  <th style={{ ...th, width: 28, textAlign: 'center' }}> </th>
+                  {['Department','Type','Code','Unit','Price','Amount','Discount','Net Amount'].map(h => (
+                    <th key={h} style={{ ...th, textAlign: ['Unit','Price','Amount','Discount','Net Amount'].includes(h) ? 'right' : 'left' }}>
+                      {h}
+                    </th>
+                  ))}
+                  {!readOnly && <th style={{ ...th, width: 24 }} />}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={readOnly ? 9 : 10} style={{ ...td, height: 48, textAlign: 'center', color: MUTED, fontStyle: 'italic' }}>
+                      No items — click Apply to load from HIS, or add rows manually
+                    </td>
+                  </tr>
+                )}
+                {rows.map((r, idx) => (
+                  <tr key={r._k} style={{ background: idx % 2 === 0 ? '#FFFFFF' : '#F8F4EE' }}>
+                    <td style={{ ...td, textAlign: 'center' }}>
+                      <input type="checkbox" style={{ accentColor: '#5B4A2E' }} />
+                    </td>
+                    <td style={td}>{r.department}</td>
+                    <td style={{ ...td, color: MUTED, fontSize: 11 }}>{r.type}</td>
+                    <td style={{ ...td, fontFamily: 'monospace', fontSize: 11 }}>{r.code}</td>
+                    <td style={{ ...td, textAlign: 'right', width: 52 }}>
+                      {readOnly ? r.unit : (
+                        <input type="number" min={1} value={r.unit}
+                          onChange={e => updateRow(r._k, 'unit', e.target.value)}
+                          style={{ ...base, width: 44, textAlign: 'right', height: 20 }}
+                        />
+                      )}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.price.toFixed(2)}</td>
+                    <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.amount.toFixed(2)}</td>
+                    <td style={{ ...td, textAlign: 'right', width: 72 }}>
+                      {readOnly ? r.discount.toFixed(2) : (
+                        <input type="number" min={0} value={r.discount}
+                          onChange={e => updateRow(r._k, 'discount', e.target.value)}
+                          style={{ ...base, width: 64, textAlign: 'right', height: 20 }}
+                        />
+                      )}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{r.netAmount.toFixed(2)}</td>
+                    {!readOnly && (
+                      <td style={{ ...td, textAlign: 'center' }}>
+                        <button
+                          onClick={() => setRows(prev => prev.filter(x => x._k !== r._k))}
+                          style={{ border: 'none', background: 'none', cursor: 'pointer', color: MUTED, fontSize: 13, lineHeight: 1, padding: 0 }}
+                        >×</button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+                {/* Add row button */}
+                {!readOnly && (
+                  <tr>
+                    <td colSpan={10} style={{ ...td, padding: '2px 6px' }}>
+                      <button
+                        onClick={() => setRows(prev => [...prev, {
+                          _k: String(++keyRef.current),
+                          department: deptName, type: '', code: '', description: 'Manual item',
+                          unit: 1, price: 0, amount: 0, discount: 0, netAmount: 0,
+                        }])}
+                        style={{ ...btn, fontSize: 11, height: 20, padding: '0 8px' }}
+                      >
+                        + Add Row
+                      </button>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ── SECTION 4: Bottom list panel ───────────────────────────── */}
+        <div style={{ background: PANEL, border: `1px solid ${BORDER}` }}>
+          {/* Filter row — exact HIS pattern */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px',
+            borderBottom: `1px solid ${BORDER}`,
+          }}>
+            <span style={{ fontSize: F, color: TEXT }}>Date:</span>
+            <span style={{ fontSize: F, color: TEXT }}>From</span>
+            <input type="date" value={listFrom} onChange={e => setListFrom(e.target.value)}
+              style={{ ...base, width: 120 }} />
+            <span style={{ fontSize: F, color: TEXT }}>To</span>
+            <input type="date" value={listTo} onChange={e => setListTo(e.target.value)}
+              style={{ ...base, width: 120 }} />
+            <button style={btn} onClick={handleFilter} disabled={listLoading}>
+              {listLoading ? '…' : 'Filter'}
+            </button>
+          </div>
+
+          {/* Results table */}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: F, minWidth: 700 }}>
+              <thead>
+                <tr>
+                  <th style={{ ...th, width: 24 }}> </th>
+                  <th style={th}>Quote Number</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Total Net Amt.</th>
+                  <th style={th}>Quote Date ↓</th>
+                  <th style={th}>CPI</th>
+                  <th style={th}>Patient Name</th>
+                  <th style={th}>Phone #</th>
+                  <th style={th}>User</th>
+                  <th style={th}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {listRows.length === 0 && (
+                  <tr>
+                    <td colSpan={9} style={{ ...td, height: 48, textAlign: 'center', color: MUTED, fontStyle: 'italic' }}>
+                      No records — click Filter to search
+                    </td>
+                  </tr>
+                )}
+                {listRows.map((r, idx) => (
+                  <tr
+                    key={r.id as string}
+                    onClick={() => handleOpenQuote(r.id as string)}
+                    style={{ background: idx % 2 === 0 ? '#FFFFFF' : '#F8F4EE', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#EDE8DC')}
+                    onMouseLeave={e => (e.currentTarget.style.background = idx % 2 === 0 ? '#FFFFFF' : '#F8F4EE')}
+                  >
+                    <td style={{ ...td, textAlign: 'center' }}><input type="checkbox" style={{ accentColor: '#5B4A2E' }} readOnly /></td>
+                    <td style={{ ...td, fontFamily: 'monospace', color: '#1D4E89', fontWeight: 600 }}>{r.quoteNumber}</td>
+                    <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{Number(r.totalNetAmount).toFixed(2)}</td>
+                    <td style={td}>{r.quoteDate ? String(r.quoteDate).slice(0, 10) : '—'}</td>
+                    <td style={{ ...td, fontFamily: 'monospace', fontSize: 11 }}>{r.cpiId || '—'}</td>
+                    <td style={{ ...td, fontWeight: 500 }}>{r.patientName}</td>
+                    <td style={{ ...td, color: MUTED }}>{r.phoneNumber || '—'}</td>
+                    <td style={{ ...td, color: MUTED }}>{r.createdByName || '—'}</td>
+                    <td style={td}>
+                      <span style={{
+                        display: 'inline-block', padding: '0 6px',
+                        fontSize: 11, fontWeight: 600,
+                        background:
+                          r.status === 'DRAFT'       ? '#E0DDD8' :
+                          r.status === 'FINALISED'   ? '#D4E2F2' :
+                          r.status === 'GOP_CREATED' ? '#D4EDDA' : '#E0DDD8',
+                        color:
+                          r.status === 'DRAFT'       ? '#4A4240' :
+                          r.status === 'FINALISED'   ? '#1D4E89' :
+                          r.status === 'GOP_CREATED' ? '#2D6A4F' : '#4A4240',
+                        border: `1px solid ${BORDER}`,
+                      }}>
+                        {r.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* ── STATUS BAR — pinned to bottom, matches HIS chrome ─────────── */}
+      <div style={{
+        flexShrink: 0, height: 24, background: SBAR_BG,
+        borderTop: `1px solid ${BORDER}`,
+        display: 'flex', alignItems: 'center', padding: '0 8px',
+        fontSize: 11, color: MUTED, gap: 0, userSelect: 'none',
+      }}>
+        {/* Left: search icon + status */}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <circle cx="5" cy="5" r="3.5" stroke={MUTED} strokeWidth="1.2"/>
+            <line x1="7.5" y1="7.5" x2="10.5" y2="10.5" stroke={MUTED} strokeWidth="1.2"/>
+          </svg>
+          None
+        </span>
+        <span style={{ margin: '0 8px', width: 1, height: 14, background: BORDER, display: 'inline-block' }} />
+        <span>{listCount} Record{listCount !== 1 ? 's' : ''}</span>
+
+        {/* Right: user | system | datetime */}
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <circle cx="5.5" cy="4" r="2.2" stroke={MUTED} strokeWidth="1"/>
+              <path d="M1 10c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke={MUTED} strokeWidth="1" fill="none"/>
+            </svg>
+            {userName || '—'}
+          </span>
+          <span style={{ width: 1, height: 12, background: BORDER, display: 'inline-block' }} />
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <rect x="1" y="2" width="9" height="8" rx="1" stroke={MUTED} strokeWidth="1"/>
+              <line x1="3" y1="1" x2="3" y2="3" stroke={MUTED} strokeWidth="1"/>
+              <line x1="8" y1="1" x2="8" y2="3" stroke={MUTED} strokeWidth="1"/>
+            </svg>
+            GOP Automation
+          </span>
+          <span style={{ width: 1, height: 12, background: BORDER, display: 'inline-block' }} />
+          <StatusClock />
+        </span>
+      </div>
     </div>
   )
+}
 
+/** Live clock in the status bar */
+function StatusClock() {
+  const [t, setT] = useState('')
+  useEffect(() => {
+    const fmt = () => {
+      const d = new Date()
+      setT(d.toLocaleDateString('en-GB',{ day:'2-digit', month:'2-digit', year:'numeric' }) +
+          ' ' + d.toLocaleTimeString('en-GB',{ hour:'2-digit', minute:'2-digit' }))
+    }
+    fmt(); const id = setInterval(fmt, 10000); return () => clearInterval(id)
+  }, [])
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-      {/* ── Header bar ── */}
-      <div style={{
-        background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: 3,
-        padding: '6px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <div>
-          <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>
-            {quoteNumber ? `Quote: ${quoteNumber}` : 'New Quotation'}
-          </span>
-          {quoteStatus !== 'DRAFT' && (
-            <span style={{
-              marginLeft: 10, padding: '1px 8px', borderRadius: 2,
-              fontSize: '0.6875rem', fontWeight: 600, color: '#FFF',
-              background: quoteStatus === 'FINALISED' ? '#1D4E89' : '#2D6A4F',
-            }}>
-              {quoteStatus.replace('_', ' ')}
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {readOnly ? (
-            <BtnSmall onClick={() => { setQuoteId(null); setQuoteNumber(''); setQuoteStatus('DRAFT'); setItems([]) }}>
-              New Quote
-            </BtnSmall>
-          ) : (
-            <>
-              <BtnSmall onClick={handleApply} disabled={applyLoading}>
-                {applyLoading ? '…' : <><i className="fas fa-bolt" style={{ fontSize: '0.625rem' }} /> Apply</>}
-              </BtnSmall>
-              <BtnSmall onClick={handleSave} variant="secondary" disabled={saving}>
-                {saving ? 'Saving…' : 'Save Draft'}
-              </BtnSmall>
-              {quoteId && (
-                <BtnSmall onClick={handleFinalise} variant="primary">
-                  Finalise
-                </BtnSmall>
-              )}
-              {isGopEligible && (
-                <BtnSmall onClick={handleCreateGop} variant="primary" disabled={gopLoading}>
-                  {gopLoading ? '…' : <><i className="fas fa-file-medical" style={{ fontSize: '0.625rem' }} /> Create GOP Request</>}
-                </BtnSmall>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── Top form (3 columns) ── */}
-      <div style={{
-        background: '#FFFFFF', border: '1px solid var(--border)', borderRadius: 3,
-        padding: '10px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0 24px',
-      }}>
-
-        {/* LEFT COLUMN */}
-        <div>
-          <SectionLabel label="Patient Information" />
-
-          {/* CPI with search */}
-          <FormRow label="CPI">
-            <div style={{ display: 'flex', position: 'relative' }}>
-              <input
-                style={{ ...inputStyle, borderRadius: '2px 0 0 2px', borderRight: 'none', flex: 1 }}
-                value={cpiInput}
-                onChange={e => handleCpiInput(e.target.value)}
-                onFocus={() => setShowCpiDrop(true)}
-                onBlur={() => setTimeout(() => setShowCpiDrop(false), 200)}
-                placeholder="CPI or name…"
-                disabled={readOnly}
-              />
-              <button
-                style={{ height: 26, padding: '0 8px', border: '1px solid var(--border)', borderRadius: '0 2px 2px 0', background: 'var(--secondary)', fontSize: '0.75rem', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}
-                onClick={() => cpiInput.length >= 2 && handleCpiInput(cpiInput)}
-                disabled={readOnly}
-              >
-                {cpiLoading ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-search" />}
-              </button>
-              {showCpiDrop && cpiResults.length > 0 && (
-                <div style={{
-                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                  background: '#FFF', border: '1px solid var(--border)', borderRadius: 2, boxShadow: 'var(--shadow-md)',
-                  maxHeight: 180, overflowY: 'auto',
-                }}>
-                  {cpiResults.map(pt => (
-                    <div key={pt.patientId}
-                      onMouseDown={() => handleCpiSelect(pt)}
-                      style={{ padding: '5px 8px', cursor: 'pointer', fontSize: '0.8125rem', borderBottom: '1px solid var(--border)' }}
-                    >
-                      <span style={{ fontWeight: 500 }}>{pt.fullName}</span>
-                      <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)' }}>{pt.nric}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </FormRow>
-          <FormRow label="Patient Name"><input style={readOnly ? readonlyStyle : inputStyle} value={patientName} onChange={e => setPatientName(e.target.value)} readOnly={readOnly} /></FormRow>
-          <FormRow label="Date of Birth"><input type="date" style={readOnly ? readonlyStyle : inputStyle} value={dob} onChange={e => setDob(e.target.value)} readOnly={readOnly} /></FormRow>
-          <FormRow label="Gender">
-            {readOnly ? <input style={readonlyStyle} value={gender} readOnly /> : (
-              <select style={selectStyle} value={gender} onChange={e => setGender(e.target.value)}>
-                <option value="">Select…</option>
-                <option value="M">Male</option>
-                <option value="F">Female</option>
-              </select>
-            )}
-          </FormRow>
-          <FormRow label="Age"><input style={readonlyStyle} value={age !== null ? `${age} yrs` : ''} readOnly /></FormRow>
-          <FormRow label="Phone No."><input style={readOnly ? readonlyStyle : inputStyle} value={phone} onChange={e => setPhone(e.target.value)} readOnly={readOnly} /></FormRow>
-          <FormRow label="Department">
-            {readOnly ? <input style={readonlyStyle} value={deptName} readOnly /> : (
-              <Sel value={deptId} options={departments} loading={loading.all}
-                onChange={(id, name) => { setDeptId(id); setDeptName(name ?? '') }} />
-            )}
-          </FormRow>
-        </div>
-
-        {/* MIDDLE COLUMN */}
-        <div>
-          <SectionLabel label="Clinical Details" />
-          <FormRow label="Attending Doctor">
-            {readOnly ? <input style={readonlyStyle} value={doctorName} readOnly /> : (
-              <Sel value={doctorId} options={doctors.map(d => ({ id: d.id, name: d.specialty ? `${d.name} (${d.specialty})` : d.name }))}
-                loading={loading.all}
-                onChange={(id, name) => {
-                  setDoctorId(id)
-                  const d = doctors.find(x => x.id === id)
-                  setDoctorName(d?.name ?? name ?? '')
-                }} />
-            )}
-          </FormRow>
-          <FormRow label="Length of Stay"><input style={readOnly ? readonlyStyle : inputStyle} type="number" min={0} value={los} onChange={e => setLos(e.target.value)} readOnly={readOnly} placeholder="Days" /></FormRow>
-          <FormRow label="Procedure">
-            {readOnly ? <input style={readonlyStyle} value={procName} readOnly /> : (
-              <Sel value={procCode}
-                options={procedures.map(p => ({ id: p.code, name: p.name }))}
-                loading={loading.procs}
-                placeholder={deptId ? 'Select procedure…' : 'Select department first'}
-                onChange={(id, name) => { setProcCode(id); setProcName(name ?? '') }} />
-            )}
-          </FormRow>
-
-          {/* Diagnosis type-ahead */}
-          <FormRow label="Diagnosis">
-            <div style={{ position: 'relative' }}>
-              <input
-                style={readOnly ? readonlyStyle : inputStyle}
-                value={diagQuery || (diagCode ? `${diagCode} — ${diagDesc}` : '')}
-                onChange={e => { setDiagQuery(e.target.value); setShowDiagDrop(true) }}
-                onFocus={() => setShowDiagDrop(true)}
-                onBlur={() => setTimeout(() => setShowDiagDrop(false), 200)}
-                placeholder="Type ICD-10 code or description…"
-                readOnly={readOnly}
-              />
-              {showDiagDrop && diagResults.length > 0 && (
-                <div style={{
-                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                  background: '#FFF', border: '1px solid var(--border)', borderRadius: 2, boxShadow: 'var(--shadow-md)',
-                  maxHeight: 180, overflowY: 'auto',
-                }}>
-                  {diagResults.map(d => (
-                    <div key={d.code}
-                      onMouseDown={() => { setDiagCode(d.code); setDiagDesc(d.description); setDiagQuery(''); setShowDiagDrop(false) }}
-                      style={{ padding: '5px 8px', cursor: 'pointer', fontSize: '0.8125rem', borderBottom: '1px solid var(--border)' }}
-                    >
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)', marginRight: 8 }}>{d.code}</span>
-                      {d.description}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </FormRow>
-          <FormRow label="Provisional Diag."><input style={readOnly ? readonlyStyle : inputStyle} value={provDiag} onChange={e => setProvDiag(e.target.value)} readOnly={readOnly} /></FormRow>
-          <FormRow label="Doctor Order Set">
-            {readOnly ? <input style={readonlyStyle} value={orderSetName} readOnly /> : (
-              <Sel value={orderSetId} options={orderSets} loading={loading.all}
-                onChange={(id, name) => { setOrderSetId(id); setOrderSetName(name ?? '') }} />
-            )}
-          </FormRow>
-        </div>
-
-        {/* RIGHT COLUMN */}
-        <div>
-          <SectionLabel label="Pricing &amp; Insurance" />
-          <FormRow label="Pricing Type">
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', height: 26 }}>
-              {(['NORMAL','DIFFERENT'] as const).map(pt => (
-                <label key={pt} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.8125rem', cursor: readOnly ? 'default' : 'pointer' }}>
-                  <input type="radio" name="pricingType" value={pt} checked={pricingType === pt} onChange={() => !readOnly && setPricingType(pt)} disabled={readOnly} style={{ cursor: readOnly ? 'default' : 'pointer' }} />
-                  {pt === 'NORMAL' ? 'Normal' : 'Different'}
-                </label>
-              ))}
-            </div>
-          </FormRow>
-          {pricingType === 'DIFFERENT' && (
-            <FormRow label="Different Pricing">
-              {readOnly ? <input style={readonlyStyle} value={diffPricingId} readOnly /> : (
-                <input style={inputStyle} value={diffPricingId} onChange={e => setDiffPricingId(e.target.value)} placeholder="Pricing ID…" />
-              )}
-            </FormRow>
-          )}
-          <FormRow label="Employer">
-            {readOnly ? <input style={readonlyStyle} value={employerName} readOnly /> : (
-              <Sel value={employerId} options={employers} loading={loading.all}
-                onChange={(id, name) => { setEmployerId(id); setEmployerName(name ?? '') }} placeholder="No employer" />
-            )}
-          </FormRow>
-          <FormRow label="Discount Package">
-            {readOnly ? <input style={readonlyStyle} value={discPkgName} readOnly /> : (
-              <Sel value={discPkgId} options={discPkgs} loading={loading.all}
-                onChange={(id, name) => { setDiscPkgId(id); setDiscPkgName(name ?? '') }} placeholder="None" />
-            )}
-          </FormRow>
-          <FormRow label="Insurer / Sponsor" highlight>
-            {readOnly ? <input style={readonlyStyle} value={insurerName} readOnly /> : (
-              <Sel value={insurerId} options={insurers} loading={loading.all}
-                onChange={(id, name) => { setInsurerId(id); setInsurerName(name ?? '') }} />
-            )}
-          </FormRow>
-          <FormRow label="Marketing Package">
-            {readOnly ? <input style={readonlyStyle} value={mktPkgName} readOnly /> : (
-              <Sel value={mktPkgId} options={mktPkgs} loading={loading.all}
-                onChange={(id, name) => { setMktPkgId(id); setMktPkgName(name ?? '') }} placeholder="None" />
-            )}
-          </FormRow>
-
-          <div style={{ height: 1, background: 'var(--border)', margin: '8px 0' }} />
-          <FormRow label="Quote Number"><input style={readonlyStyle} value={quoteNumber || '(auto-generated)'} readOnly /></FormRow>
-          <FormRow label="Quote Date"><input type="date" style={readOnly ? readonlyStyle : inputStyle} value={quoteDate} onChange={e => setQuoteDate(e.target.value)} readOnly={readOnly} /></FormRow>
-          <FormRow label="Status"><input style={readonlyStyle} value={quoteStatus} readOnly /></FormRow>
-          <FormRow label="User"><input style={readonlyStyle} value={session?.user?.name ?? session?.user?.email ?? ''} readOnly /></FormRow>
-          <FormRow label="Total Net Amt.">
-            <input style={{ ...readonlyStyle, fontWeight: 700, color: 'var(--foreground)' }} value={totalNet.toFixed(2)} readOnly />
-          </FormRow>
-        </div>
-      </div>
-
-      {/* ── Quote Items Table ── */}
-      <div>
-        <div style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: 6, color: 'var(--foreground)' }}>Quote Items</div>
-        <QuoteItemsTable
-          items={items}
-          onUpdate={handleItemUpdate}
-          onDelete={key => setItems(prev => prev.filter(r => r._key !== key))}
-          onAdd={handleAddItem}
-          readOnly={readOnly}
-        />
-      </div>
-
-      {/* ── Bottom list panel ── */}
-      <div>
-        <div style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: 6, color: 'var(--foreground)' }}>All Quotations</div>
-        <QuoteListPanel onOpen={handleOpenQuote} />
-      </div>
-    </div>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <circle cx="5.5" cy="5.5" r="4" stroke="#6B5E4A" strokeWidth="1"/>
+        <line x1="5.5" y1="3" x2="5.5" y2="5.5" stroke="#6B5E4A" strokeWidth="1"/>
+        <line x1="5.5" y1="5.5" x2="7.5" y2="7" stroke="#6B5E4A" strokeWidth="1"/>
+      </svg>
+      {t}
+    </span>
   )
 }

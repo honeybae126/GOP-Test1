@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -155,39 +155,38 @@ export function CostTable({
           <tbody>
             {[...grouped.entries()].map(([cat, catItems]) => {
               const catNet = +catItems.reduce((s, i) => s + i.netAmount, 0).toFixed(2)
-              return [
-                // Category header row
-                <tr key={`hdr-${cat}`}>
-                  <td colSpan={8} style={{ background: '#f0f4f8', fontWeight: 700, padding: '4px 8px', fontSize: 11, borderBottom: '1px solid #ddd' }}>
-                    {LABELS[cat as CostCategory] ?? cat}
-                  </td>
-                </tr>,
-                // Line item rows
-                ...catItems.map(item => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '4px 6px' }}>{item.department}</td>
-                    <td style={{ padding: '4px 6px', color: '#666' }}>{LABELS[item.category] ?? item.category}</td>
-                    <td style={{ padding: '4px 6px' }}>
-                      <div style={{ fontWeight: 500 }}>{item.description}</div>
-                      {item.code && <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#888' }}>{item.code}</div>}
+              return (
+                <React.Fragment key={cat}>
+                  <tr>
+                    <td colSpan={8} style={{ background: '#f0f4f8', fontWeight: 700, padding: '4px 8px', fontSize: 11, borderBottom: '1px solid #ddd' }}>
+                      {LABELS[cat as CostCategory] ?? cat}
                     </td>
-                    <td style={{ padding: '4px 6px', textAlign: 'right' }}>{item.unit}</td>
-                    <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(item.unitPrice)}</td>
-                    <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(item.amount)}</td>
-                    <td style={{ padding: '4px 6px', textAlign: 'right' }}>{item.discount > 0 ? fmt(item.discount) : '—'}</td>
-                    <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 600 }}>{fmt(item.netAmount)}</td>
                   </tr>
-                )),
-                // Category subtotal
-                showCategorySubtotals && (
-                  <tr key={`sub-${cat}`} style={{ borderBottom: '2px solid #ddd' }}>
-                    <td colSpan={7} style={{ padding: '3px 6px', textAlign: 'right', fontSize: 11, color: '#555', fontStyle: 'italic' }}>
-                      {LABELS[cat as CostCategory] ?? cat} Subtotal
-                    </td>
-                    <td style={{ padding: '3px 6px', textAlign: 'right', fontSize: 11, fontWeight: 600 }}>{fmt(catNet)}</td>
-                  </tr>
-                ),
-              ]
+                  {catItems.map(item => (
+                    <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '4px 6px' }}>{item.department}</td>
+                      <td style={{ padding: '4px 6px', color: '#666' }}>{LABELS[item.category] ?? item.category}</td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <div style={{ fontWeight: 500 }}>{item.description}</div>
+                        {item.code && <div style={{ fontFamily: 'monospace', fontSize: 10, color: '#888' }}>{item.code}</div>}
+                      </td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{item.unit}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(item.unitPrice)}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(item.amount)}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right' }}>{item.discount > 0 ? fmt(item.discount) : '—'}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 600 }}>{fmt(item.netAmount)}</td>
+                    </tr>
+                  ))}
+                  {showCategorySubtotals && (
+                    <tr style={{ borderBottom: '2px solid #ddd' }}>
+                      <td colSpan={7} style={{ padding: '3px 6px', textAlign: 'right', fontSize: 11, color: '#555', fontStyle: 'italic' }}>
+                        {LABELS[cat as CostCategory] ?? cat} Subtotal
+                      </td>
+                      <td style={{ padding: '3px 6px', textAlign: 'right', fontSize: 11, fontWeight: 600 }}>{fmt(catNet)}</td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              )
             })}
           </tbody>
           <tfoot>

@@ -16,28 +16,17 @@ export default function BillingPage() {
   useEffect(() => {
     if (status === 'unauthenticated') router.replace('/auth/signin')
     if (status === 'authenticated' && role && !ALLOWED_ROLES.includes(role)) {
-      router.replace('/gop') // redirect non-billing roles
+      router.replace('/gop')
     }
   }, [status, role, router])
 
   if (status === 'loading' || !role) return null
   if (!ALLOWED_ROLES.includes(role)) return null
 
+  // Full-bleed — no GOP header chrome, matches HIS window style
   return (
-    <div className="page-container">
-      {/* Page header */}
-      <div className="dashboard-header">
-        <div>
-          <h1 className="header-title">Billing / Quotation</h1>
-          <p className="header-subtitle">
-            Create and manage quotations — data loaded from the Hospital Information System
-          </p>
-        </div>
-      </div>
-
-      <div style={{ padding: 'var(--spacing-lg)' }}>
-        <BillingForm />
-      </div>
+    <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <BillingForm />
     </div>
   )
 }

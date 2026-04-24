@@ -25,7 +25,31 @@ const ADMIN_EVENTS = [
   { key: 'USER_CREATED',     label: 'New user created',    description: 'When a new user account is provisioned.', mandatory: false },
 ]
 
-type Section = 'profile' | 'notifications' | 'insurers' | 'users' | 'system'
+function SectionCard({ icon, title, sub, children }: { icon: string; title: string; sub?: string; children: React.ReactNode }) {
+  return (
+    <div className="table-wrapper">
+      <div className="card-header-row">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <i className={icon} style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }} />
+          <div>
+            <div className="card-header-title">{title}</div>
+            {sub && <div className="card-header-sub">{sub}</div>}
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: 'var(--spacing-lg)' }}>{children}</div>
+    </div>
+  )
+}
+
+function KVRow({ label, value, first }: { label: string; value: React.ReactNode; first?: boolean }) {
+  return (
+    <div className="kv-row" style={{ borderTop: first ? 'none' : undefined }}>
+      <span className="kv-label">{label}</span>
+      <span className="kv-value">{value}</span>
+    </div>
+  )
+}
 
 function Toggle({ checked, disabled, onChange }: { checked: boolean; disabled?: boolean; onChange?: (v: boolean) => void }) {
   return (
@@ -36,35 +60,20 @@ function Toggle({ checked, disabled, onChange }: { checked: boolean; disabled?: 
       disabled={disabled}
       onClick={() => onChange?.(!checked)}
       style={{
-        width: '2rem', height: '1rem', borderRadius: '9999px', border: '1px solid var(--border)',
-        background: checked ? 'var(--primary)' : 'var(--secondary)', cursor: disabled ? 'not-allowed' : 'pointer',
-        position: 'relative', transition: 'background var(--transition-base)', flexShrink: 0,
-        opacity: disabled ? 0.6 : 1, padding: 0,
+        width: '2.5rem', height: '1.25rem', borderRadius: '9999px', border: 'none',
+        background: checked ? 'var(--primary)' : 'var(--muted)', cursor: disabled ? 'not-allowed' : 'pointer',
+        position: 'relative', transition: 'background var(--transition-base)', flexShrink: 0, opacity: disabled ? 0.6 : 1,
       }}
     >
       <span style={{
-        position: 'absolute', top: 1,
-        left: checked ? 'calc(100% - 15px)' : 1,
-        width: 12, height: 12, borderRadius: '9999px',
+        position: 'absolute', top: '0.125rem',
+        left: checked ? '1.375rem' : '0.125rem',
+        width: '1rem', height: '1rem', borderRadius: '9999px',
         background: 'white', transition: 'left var(--transition-base)',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
       }} />
     </button>
   )
-}
-
-// HIS-style label+value row
-function HisRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="his-row" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 6, paddingTop: 6 }}>
-      <span className="his-label">{label}</span>
-      <div className="his-value">{children}</div>
-    </div>
-  )
-}
-
-function SectionDivider({ title }: { title: string }) {
-  return <div className="his-section-title" style={{ marginTop: 8 }}>{title}</div>
 }
 
 export default function SettingsPage() {
@@ -72,15 +81,14 @@ export default function SettingsPage() {
   const user = session?.user
   const role = user?.role ?? ''
 
-  const [activeSection, setActiveSection]   = useState<Section>('profile')
-  const [displayName, setDisplayName]       = useState(user?.name ?? '')
-  const [specialty, setSpecialty]           = useState('')
-  const [department, setDepartment]         = useState('')
-  const [savingProfile, setSavingProfile]   = useState(false)
-  const [preferences, setPreferences]       = useState<Record<string, boolean>>({})
-  const [prefLoaded, setPrefLoaded]         = useState(false)
-  const [insurers, setInsurers]             = useState<{ id: string; name: string }[]>([])
-  const [systemConfig, setSystemConfig]     = useState<Record<string, string>>({})
+  const [displayName, setDisplayName]     = useState(user?.name ?? '')
+  const [specialty, setSpecialty]         = useState('')
+  const [department, setDepartment]       = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [preferences, setPreferences]     = useState<Record<string, boolean>>({})
+  const [prefLoaded, setPrefLoaded]       = useState(false)
+  const [insurers, setInsurers]           = useState<{ id: string; name: string }[]>([])
+  const [systemConfig, setSystemConfig]   = useState<Record<string, string>>({})
 
   const events = role === 'DOCTOR' ? DOCTOR_EVENTS : role === 'IT_ADMIN' ? ADMIN_EVENTS : STAFF_EVENTS
 
@@ -95,7 +103,7 @@ export default function SettingsPage() {
         setPrefLoaded(true)
       })
       .catch(() => setPrefLoaded(true))
-  }, [role]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [role])
 
   useEffect(() => {
     if (role === 'IT_ADMIN') {
@@ -137,253 +145,127 @@ export default function SettingsPage() {
     }
   }
 
-  const navItems: { key: Section; label: string; roles?: string[] }[] = (
-    [
-      { key: 'profile'       as Section, label: 'Profile' },
-      { key: 'notifications' as Section, label: 'Notifications' },
-      { key: 'insurers'      as Section, label: 'Insurer Config',  roles: ['IT_ADMIN'] },
-      { key: 'users'         as Section, label: 'User Management', roles: ['IT_ADMIN'] },
-      { key: 'system'        as Section, label: 'System Defaults', roles: ['IT_ADMIN'] },
-    ] as { key: Section; label: string; roles?: string[] }[]
-  ).filter(n => !n.roles || n.roles.includes(role))
-
   return (
-    <div className="his-page" style={{ height: '100%' }}>
-      {/* ── Page header ── */}
-      <div className="his-page-header">
+    <div className="page-container">
+      <div className="dashboard-header">
         <div>
-          <div className="his-page-title">Settings</div>
-          <div className="his-page-sub">Account preferences and system configuration</div>
+          <h1 className="header-title">Settings</h1>
+          <p className="header-subtitle">Manage your account and system preferences.</p>
         </div>
       </div>
 
-      {/* ── Settings layout: left nav + content ── */}
-      <div className="his-settings-layout" style={{ flex: 1, overflow: 'hidden' }}>
+      <div style={{ padding: 'var(--spacing-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-lg)', maxWidth: 700 }}>
 
-        {/* Left nav */}
-        <div className="his-settings-sidebar">
-          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', background: 'var(--primary)', color: 'white' }}>
-            <div style={{ padding: '0 14px', fontSize: '0.6875rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', opacity: 0.75 }}>
-              Sections
+        {/* Profile */}
+        <SectionCard icon="fas fa-user" title="Profile" sub="Your account information.">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">Display name</label>
+              <input
+                className="form-input"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                maxLength={80}
+              />
             </div>
-          </div>
-          {navItems.map(n => (
-            <button
-              key={n.key}
-              className={`his-settings-nav-item${activeSection === n.key ? ' active' : ''}`}
-              onClick={() => setActiveSection(n.key)}
-            >
-              {n.label}
-            </button>
-          ))}
-        </div>
+            <KVRow first label="Email" value={user?.email ?? '—'} />
+            <KVRow label="Role" value={
+              <span className="badge badge-submitted">{role}</span>
+            } />
 
-        {/* Content area */}
-        <div className="his-settings-content" style={{ overflowY: 'auto' }}>
-
-          {/* ── Profile ── */}
-          {activeSection === 'profile' && (
-            <div className="his-panel">
-              <div className="his-section">
-                <SectionDivider title="Profile Information" />
-                <div className="his-form">
-                  <HisRow label="Display Name">
-                    <input
-                      className="his-input"
-                      value={displayName}
-                      onChange={e => setDisplayName(e.target.value)}
-                      maxLength={80}
-                      style={{ maxWidth: 320 }}
-                    />
-                  </HisRow>
-                  <HisRow label="Email">
-                    <span style={{ fontSize: '0.8125rem' }}>{user?.email ?? '—'}</span>
-                  </HisRow>
-                  <HisRow label="Role">
-                    <span className="his-badge" style={{ background: 'var(--secondary)', color: 'var(--foreground)', border: '1px solid var(--border)' }}>
-                      {role}
-                    </span>
-                  </HisRow>
-
-                  {role === 'DOCTOR' && (
-                    <>
-                      <SectionDivider title="Clinical Details" />
-                      <HisRow label="Specialty">
-                        <input
-                          className="his-input"
-                          value={specialty}
-                          onChange={e => setSpecialty(e.target.value)}
-                          placeholder="e.g. Cardiology"
-                          maxLength={80}
-                          style={{ maxWidth: 320 }}
-                        />
-                      </HisRow>
-                      <HisRow label="Department">
-                        <input
-                          className="his-input"
-                          value={department}
-                          onChange={e => setDepartment(e.target.value)}
-                          placeholder="e.g. Ward 3A"
-                          maxLength={80}
-                          style={{ maxWidth: 320 }}
-                        />
-                      </HisRow>
-                      <HisRow label="Digital Signature">
-                        <div style={{
-                          padding: '6px 10px', background: 'var(--secondary)',
-                          border: '1px solid var(--border)', borderRadius: 2,
-                          fontSize: '0.8125rem', color: 'var(--muted-foreground)', maxWidth: 420,
-                        }}>
-                          <i className="fas fa-info-circle" style={{ marginRight: 6 }} />
-                          Managed by the Hospital Information System. Contact IT Admin to update.
-                        </div>
-                      </HisRow>
-                    </>
-                  )}
+            {role === 'DOCTOR' && (
+              <>
+                <div style={{ height: 1, background: 'var(--border)' }} />
+                <div className="form-group">
+                  <label className="form-label">Specialty</label>
+                  <input className="form-input" value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder="e.g. Cardiology" maxLength={80} />
                 </div>
-
-                <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={handleSaveProfile}
-                    disabled={savingProfile}
-                    className="his-btn his-btn-primary his-btn-lg"
-                  >
-                    <i className="fas fa-save" style={{ fontSize: '0.75rem' }} />
-                    {savingProfile ? 'Saving…' : 'Save Profile'}
-                  </button>
+                <div className="form-group">
+                  <label className="form-label">Department</label>
+                  <input className="form-input" value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Ward 3A" maxLength={80} />
                 </div>
-              </div>
-
-              <div className="his-section" style={{ borderTop: '1px solid var(--border)' }}>
-                <SectionDivider title="System Information" />
-                <div className="his-form">
-                  <HisRow label="Version"><span style={{ fontSize: '0.8125rem' }}>Phase 1 — MVP</span></HisRow>
-                  <HisRow label="Hospital"><span style={{ fontSize: '0.8125rem' }}>Intercare Hospital</span></HisRow>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Notifications ── */}
-          {activeSection === 'notifications' && (
-            <div className="his-panel">
-              <div className="his-section">
-                <SectionDivider title="In-App Notification Preferences" />
-                {!prefLoaded && (
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)', padding: '8px 0' }}>
-                    <i className="fas fa-spinner fa-spin" style={{ marginRight: 6 }} />Loading…
-                  </p>
-                )}
-                {prefLoaded && (
-                  <div className="his-table-wrapper">
-                    <table className="his-table" style={{ minWidth: 0 }}>
-                      <thead>
-                        <tr>
-                          <th>Event</th>
-                          <th>Description</th>
-                          <th style={{ width: 80, textAlign: 'center' }}>Required</th>
-                          <th style={{ width: 80, textAlign: 'center' }}>Enabled</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {events.map(event => (
-                          <tr key={event.key}>
-                            <td style={{ fontWeight: 500 }}>{event.label}</td>
-                            <td style={{ color: 'var(--muted-foreground)', fontSize: '0.75rem' }}>{event.description}</td>
-                            <td style={{ textAlign: 'center' }}>
-                              {event.mandatory
-                                ? <span className="his-badge" style={{ background: 'var(--secondary)', color: 'var(--foreground)', border: '1px solid var(--border)', fontSize: '0.625rem' }}>Required</span>
-                                : <span style={{ color: 'var(--muted-foreground)', fontSize: '0.75rem' }}>—</span>}
-                            </td>
-                            <td style={{ textAlign: 'center' }}>
-                              <Toggle
-                                checked={event.mandatory ? true : (preferences[event.key] ?? true)}
-                                disabled={event.mandatory}
-                                onChange={v => !event.mandatory && handleToggle(event.key, v)}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div style={{ padding: '0.75rem', background: 'var(--gray-50)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <i className="fas fa-signature" style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }} />
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>Digital Signature</span>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ── Insurer Config (Admin) ── */}
-          {activeSection === 'insurers' && role === 'IT_ADMIN' && (
-            <div className="his-panel">
-              <div className="his-section">
-                <SectionDivider title="Insurer Configuration" />
-                {insurers.length === 0
-                  ? <p style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>No insurers configured yet.</p>
-                  : (
-                    <div className="his-table-wrapper">
-                      <table className="his-table" style={{ minWidth: 0 }}>
-                        <thead><tr><th>Insurer Name</th><th style={{ width: 120 }}>Actions</th></tr></thead>
-                        <tbody>
-                          {insurers.map(ins => (
-                            <tr key={ins.id}>
-                              <td>{ins.name}</td>
-                              <td>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Edit — Phase 2</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )
-                }
-              </div>
-            </div>
-          )}
-
-          {/* ── User Management (Admin) ── */}
-          {activeSection === 'users' && role === 'IT_ADMIN' && (
-            <div className="his-panel">
-              <div className="his-section">
-                <SectionDivider title="User Management" />
-                <p style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)' }}>
-                  User provisioning is managed through Microsoft Entra (Azure AD). Roles are assigned via AAD group membership.
-                  Full user management UI is planned for Phase 2.
-                </p>
-                <div style={{ marginTop: 10 }}>
-                  <a href="/admin/users" className="his-btn his-btn-secondary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                    <i className="fas fa-users" style={{ fontSize: '0.75rem' }} />
-                    View Current Users
-                  </a>
+                  <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)' }}>
+                    Your signature is stored in the Hospital Information System and is applied automatically when generating verified GOP PDFs.
+                    If your signature is missing or needs to be updated, please contact your IT Admin.
+                  </p>
                 </div>
-              </div>
-            </div>
-          )}
+              </>
+            )}
 
-          {/* ── System Defaults (Admin) ── */}
-          {activeSection === 'system' && role === 'IT_ADMIN' && (
-            <div className="his-panel">
-              <div className="his-section">
-                <SectionDivider title="System Defaults" />
-                <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: 10 }}>
-                  Read-only in Phase 1 — edit via database or system config API in Phase 2.
-                </p>
-                <div className="his-form">
-                  <HisRow label="Request expiry">
-                    <span style={{ fontSize: '0.8125rem' }}>{systemConfig['request_expiry_days'] ?? '30'} days</span>
-                  </HisRow>
-                  <HisRow label="PDF footer">
-                    <span style={{ fontSize: '0.8125rem' }}>{systemConfig['pdf_footer_text'] ?? '—'}</span>
-                  </HisRow>
-                  <HisRow label="Audit retention">
-                    <span style={{ fontSize: '0.8125rem' }}>{systemConfig['audit_log_retention_days'] ?? '730'} days</span>
-                  </HisRow>
+            <button
+              onClick={handleSaveProfile}
+              disabled={savingProfile}
+              className="btn btn-primary btn-sm"
+              style={{ alignSelf: 'flex-start' }}
+            >
+              <i className="fas fa-save" />
+              {savingProfile ? 'Saving…' : 'Save profile'}
+            </button>
+          </div>
+        </SectionCard>
+
+        {/* Notifications */}
+        <SectionCard icon="fas fa-bell" title="Notifications" sub="Choose which events trigger in-app notifications.">
+          {!prefLoaded && <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--muted-foreground)' }}>Loading preferences…</p>}
+          {prefLoaded && events.map((event, i) => (
+            <div
+              key={event.key}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
+                padding: '0.75rem 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.125rem' }}>
+                  <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--foreground)' }}>{event.label}</span>
+                  {event.mandatory && <span className="badge badge-draft" style={{ fontSize: '0.625rem' }}>Required</span>}
                 </div>
+                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)' }}>{event.description}</p>
               </div>
+              <Toggle
+                checked={event.mandatory ? true : (preferences[event.key] ?? true)}
+                disabled={event.mandatory}
+                onChange={(v) => !event.mandatory && handleToggle(event.key, v)}
+              />
             </div>
-          )}
+          ))}
+        </SectionCard>
 
-        </div>
+        {/* Admin: Insurer Config */}
+        {role === 'IT_ADMIN' && (
+          <SectionCard icon="fas fa-building" title="Insurer Configuration" sub="Active insurers configured in the system.">
+            {insurers.length === 0
+              ? <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--muted-foreground)' }}>No insurers configured yet.</p>
+              : insurers.map((ins, i) => (
+                <div key={ins.id} className="kv-row" style={{ borderTop: i > 0 ? undefined : 'none' }}>
+                  <span className="kv-value">{ins.name}</span>
+                  <span className="badge badge-routine" style={{ fontSize: '0.625rem' }}>Edit — Phase 2</span>
+                </div>
+              ))
+            }
+          </SectionCard>
+        )}
+
+        {/* Admin: System Defaults */}
+        {role === 'IT_ADMIN' && (
+          <SectionCard icon="fas fa-sliders-h" title="System Defaults" sub="Global configuration values. Edit via database in Phase 2.">
+            <KVRow first label="Request expiry window" value={`${systemConfig['request_expiry_days'] ?? '30'} days`} />
+            <KVRow label="PDF footer text" value={systemConfig['pdf_footer_text'] ?? '—'} />
+            <KVRow label="Audit log retention" value={`${systemConfig['audit_log_retention_days'] ?? '730'} days`} />
+          </SectionCard>
+        )}
+
+        {/* System info */}
+        <SectionCard icon="fas fa-shield-alt" title="System">
+          <KVRow first label="Version" value="Phase 1 — MVP" />
+          <KVRow label="Hospital" value="Intercare Hospital" />
+        </SectionCard>
+
       </div>
     </div>
   )

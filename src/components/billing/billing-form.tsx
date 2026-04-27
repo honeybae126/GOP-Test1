@@ -41,19 +41,19 @@ interface QuoteRow {
   unit: number; price: number; amount: number; discount: number; netAmount: number
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-// Input height: 44px = h-11, 8px grid spacing
-const F  = 'w-full h-11 px-4 text-sm text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 bg-white transition-all placeholder:text-gray-400'
-const RO = 'w-full h-11 px-4 text-sm text-gray-500 border border-gray-100 rounded-lg bg-gray-50 cursor-not-allowed'
-const BTN_PRIMARY  = 'inline-flex items-center gap-2 px-5 h-11 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm'
-const BTN_SECONDARY = 'inline-flex items-center gap-2 px-5 h-11 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 bg-white shadow-sm'
-const BTN_GHOST    = 'inline-flex items-center gap-2 px-4 h-9 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors bg-white'
-const BTN_OUTLINE  = 'inline-flex items-center gap-2 px-4 h-9 text-sm font-medium text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors'
-const LABEL = 'block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5'
+// ─── Design tokens — SynthCare visual language ────────────────────────────────
+// Filled inputs (SynthCare --input: #F3F4F6), hover lift on buttons, Poppins-style headings
+const F  = 'w-full h-10 px-4 text-sm text-gray-800 bg-gray-100 rounded-lg border-0 focus:outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/20 transition-all placeholder:text-gray-400'
+const RO = 'w-full h-10 px-4 text-sm text-gray-500 bg-gray-100 rounded-lg border-0 cursor-not-allowed opacity-80'
+const BTN_PRIMARY   = 'inline-flex items-center gap-2 px-5 h-10 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 hover:-translate-y-0.5 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none'
+const BTN_SECONDARY = 'inline-flex items-center gap-2 px-5 h-10 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 hover:-translate-y-0.5 transition-all disabled:opacity-50 bg-white shadow-sm'
+const BTN_GHOST     = 'inline-flex items-center gap-2 px-4 h-9 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors bg-white'
+const BTN_OUTLINE   = 'inline-flex items-center gap-2 px-4 h-9 text-sm font-medium text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors'
+const LABEL = 'block text-sm font-medium text-gray-500 mb-1.5'
 
 // ─── UI-only sub-components ───────────────────────────────────────────────────
 
-/** Toggle switch — same boolean state as before, visual upgrade from checkbox */
+/** Toggle switch — SynthCare style: smooth pill, shadow thumb */
 function Toggle({ checked, onChange, disabled, label, id }: {
   checked: boolean; onChange: (v: boolean) => void
   disabled?: boolean; label: string; id: string
@@ -67,24 +67,24 @@ function Toggle({ checked, onChange, disabled, label, id }: {
         aria-checked={checked}
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${checked ? 'bg-primary-600' : 'bg-gray-200'} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:ring-offset-1 ${checked ? 'bg-primary-600' : 'bg-gray-200'} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
       >
-        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+        <span className={`pointer-events-none inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out ${checked ? 'translate-x-[22px]' : 'translate-x-[3px]'}`} />
       </button>
       <span className="text-sm font-medium text-gray-700">{label}</span>
     </label>
   )
 }
 
-/** SectionCard — consistent card with titled header */
+/** SectionCard — SynthCare card style: white, subtle shadow, Poppins heading */
 function SectionCard({ title, icon, children, className = '' }: {
   title: string; icon?: React.ReactNode; children: React.ReactNode; className?: string
 }) {
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 shadow-card overflow-hidden ${className}`}>
-      <div className="flex items-center gap-2.5 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+    <div className={`bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden ${className}`}>
+      <div className="flex items-center gap-2.5 px-6 py-4 border-b border-gray-100">
         {icon && <span className="text-primary-600">{icon}</span>}
-        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">{title}</h2>
+        <h2 className="text-base font-semibold text-gray-800">{title}</h2>
       </div>
       <div className="p-6">
         {children}
@@ -103,7 +103,7 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
   )
 }
 
-/** GOPSelect — styled select with chevron (unchanged logic) */
+/** GOPSelect — filled-input select with chevron (SynthCare style) */
 function GOPSelect({ value, onChange, options, placeholder = '', loading = false, disabled = false }: {
   value: string; onChange: (id: string, name: string) => void
   options: Opt[]; placeholder?: string; loading?: boolean; disabled?: boolean
@@ -111,7 +111,7 @@ function GOPSelect({ value, onChange, options, placeholder = '', loading = false
   return (
     <div className="relative w-full">
       <select
-        className={`${F} appearance-none pr-10 ${disabled ? 'bg-gray-50 cursor-not-allowed opacity-60' : ''}`}
+        className={`${F} appearance-none pr-10 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
         value={value}
         disabled={disabled || loading}
         onChange={e => {
@@ -519,13 +519,13 @@ export function BillingForm() {
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full font-sans bg-gray-50">
+    <div className="flex flex-col h-full font-sans" style={{ background: 'linear-gradient(to bottom right, #F0F4FF 0%, #ffffff 60%)' }}>
 
       {/* ── Scrollable content (bottom-padded so sticky bar doesn't overlap) ── */}
       <div className="flex-1 overflow-y-auto pb-24 px-6 pt-6 space-y-5">
 
-        {/* Page header */}
-        <div className="flex items-center justify-between">
+        {/* Page header — SynthCare style: white card, Poppins heading */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-6 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Billing / Quotation</h1>
             <p className="text-sm text-gray-500 mt-0.5">Create and manage patient billing quotes</p>
@@ -554,14 +554,15 @@ export function BillingForm() {
             <span className={LABEL}>CPI — Patient Lookup</span>
             <div className="flex gap-3 max-w-lg relative">
               <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 <input
-                  className={`${F} pr-10`}
+                  className={`${F} pl-10`}
                   value={cpiRaw}
                   onChange={e => handleCpiSearch(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleCpiSearch(cpiRaw)}
                   onFocus={() => cpiResults.length && setShowCpi(true)}
                   onBlur={() => setTimeout(() => setShowCpi(false), 200)}
-                  placeholder="Type CPI number or patient name…"
+                  placeholder="Enter CPI number or patient name…"
                   disabled={readOnly}
                 />
                 {/* CPI dropdown */}
@@ -609,7 +610,7 @@ export function BillingForm() {
                   ? <input className={RO} value={gender} readOnly />
                   : <div className="relative">
                       <select className={`${F} appearance-none pr-10`} value={gender} onChange={e => setGender(e.target.value)}>
-                        <option value="" />
+                        <option value="">Select gender</option>
                         <option value="M">Male</option>
                         <option value="F">Female</option>
                       </select>
@@ -796,29 +797,29 @@ export function BillingForm() {
               )}
             </div>
 
-            {/* C — Quote Summary (highlighted card) */}
-            <div className="rounded-xl bg-gradient-to-br from-primary-50 via-blue-50 to-indigo-50 border border-primary-100 p-5 flex flex-col gap-4">
-              <p className="text-xs font-bold text-primary-700 uppercase tracking-wider">Quote Summary</p>
+            {/* C — Quote Summary — SynthCare gradient card */}
+            <div className="rounded-xl p-5 flex flex-col gap-4" style={{ background: 'linear-gradient(135deg, #5B5FFF 0%, #6366F1 100%)' }}>
+              <p className="text-xs font-bold text-white/80 uppercase tracking-wider">Quote Summary</p>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-primary-100">
-                  <span className="text-sm text-gray-600">Gross Amount</span>
-                  <span className="text-sm font-semibold text-gray-800 font-mono">{totalAmount.toFixed(2)}</span>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center py-2 border-b border-white/20">
+                  <span className="text-sm text-white/80">Gross Amount</span>
+                  <span className="text-sm font-semibold text-white font-mono">{totalAmount.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b border-primary-100">
-                  <span className="text-sm text-gray-600">Total Discount</span>
-                  <span className="text-sm font-semibold text-gray-500 font-mono">({totalDiscount.toFixed(2)})</span>
+                <div className="flex justify-between items-center py-2 border-b border-white/20">
+                  <span className="text-sm text-white/80">Discount</span>
+                  <span className="text-sm font-semibold text-white/70 font-mono">({totalDiscount.toFixed(2)})</span>
                 </div>
-                <div className="flex justify-between items-center py-3 bg-white/70 rounded-lg px-3 mt-2">
-                  <span className="text-sm font-bold text-gray-700">Total Net Amount</span>
-                  <span className="text-xl font-bold text-primary-600 font-mono">{totalNet.toFixed(2)}</span>
+                <div className="flex justify-between items-center py-3 bg-white/15 rounded-lg px-3 mt-1">
+                  <span className="text-sm font-bold text-white">Total Net Amount</span>
+                  <span className="text-xl font-bold text-white font-mono">{totalNet.toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* Create GOP button — only for AIA / ASSURNET */}
+              {/* Create GOP — only for AIA / ASSURNET */}
               {isGopEligible && !readOnly && (
                 <button onClick={handleCreateGop} disabled={gopBusy}
-                  className="mt-auto inline-flex items-center justify-center gap-2 w-full h-11 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50">
+                  className="mt-auto inline-flex items-center justify-center gap-2 w-full h-10 bg-white text-primary-600 text-sm font-semibold rounded-lg hover:bg-white/90 transition-all hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50">
                   {gopBusy ? '…' : <><ArrowRight className="h-4 w-4" /> Create GOP Request</>}
                 </button>
               )}
@@ -835,8 +836,8 @@ export function BillingForm() {
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <input
-                className="w-full h-9 pl-9 pr-4 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white"
-                placeholder="Search items…"
+                className="w-full h-9 pl-9 pr-4 text-sm bg-gray-100 rounded-lg border-0 focus:outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/20 transition-all placeholder:text-gray-400"
+                placeholder="Search item / service / code…"
                 value={itemQuery}
                 onChange={e => setItemQuery(e.target.value)}
               />
@@ -957,12 +958,12 @@ export function BillingForm() {
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-400">From</span>
               <input type="date" value={listFrom} onChange={e => setListFrom(e.target.value)}
-                className="h-9 px-3 text-sm text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white" />
+                className="h-9 px-3 text-sm text-gray-800 bg-gray-100 rounded-lg border-0 focus:outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/20 transition-all" />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-400">To</span>
               <input type="date" value={listTo} onChange={e => setListTo(e.target.value)}
-                className="h-9 px-3 text-sm text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white" />
+                className="h-9 px-3 text-sm text-gray-800 bg-gray-100 rounded-lg border-0 focus:outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/20 transition-all" />
             </div>
             <button onClick={handleFilter} disabled={listLoading}
               className="px-5 h-9 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50">
@@ -1023,19 +1024,24 @@ export function BillingForm() {
       </div>
 
       {/* ────────────────────────────────────────────────────────────────
-          STICKY ACTION BAR — always visible at the bottom
+          STICKY ACTION BAR — SynthCare: white card, gradient total, shadow
       ──────────────────────────────────────────────────────────────── */}
-      <div className="shrink-0 sticky bottom-0 bg-white border-t border-gray-200 shadow-lg z-20">
+      <div className="shrink-0 sticky bottom-0 bg-white border-t border-gray-100 z-20" style={{ boxShadow: '0 -4px 20px rgba(91,95,255,0.08)' }}>
         <div className="flex items-center justify-between px-6 py-4">
-          {/* Left — live total */}
-          <div className="flex items-center gap-4">
-            <div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Net Amount</p>
-              <p className="text-xl font-bold text-primary-600 font-mono leading-tight">{totalNet.toFixed(2)}</p>
+          {/* Left — live total with SynthCare primary colour */}
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary-600" />
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Total Net Amount</p>
+                <p className="text-xl font-bold font-mono leading-tight" style={{ color: '#5B5FFF' }}>
+                  $ {totalNet.toFixed(2)}
+                </p>
+              </div>
             </div>
             {quoteNum && (
-              <div className="pl-4 border-l border-gray-200">
-                <p className="text-xs text-gray-400">Quote</p>
+              <div className="pl-5 border-l border-gray-100">
+                <p className="text-xs text-gray-400">Quote No.</p>
                 <p className="text-sm font-semibold text-gray-700 font-mono">{quoteNum}</p>
               </div>
             )}
@@ -1043,21 +1049,29 @@ export function BillingForm() {
 
           {/* Right — action buttons */}
           <div className="flex items-center gap-3">
-            <button onClick={resetForm} className={BTN_SECONDARY}>
-              Cancel
-            </button>
+            <button onClick={resetForm} className={BTN_SECONDARY}>Cancel</button>
             {!readOnly && (
               <>
                 <button onClick={() => doSave()} disabled={saving} className={BTN_SECONDARY}>
                   {saving ? 'Saving…' : 'Save Draft'}
                 </button>
-                <button onClick={handleFinalise} disabled={finalising || saving} className={BTN_PRIMARY}>
-                  {finalising ? 'Finalising…' : 'Finalize Quote'}
+                <button
+                  onClick={handleFinalise}
+                  disabled={finalising || saving}
+                  className="inline-flex items-center gap-2 px-5 h-10 text-white text-sm font-semibold rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  style={{ background: 'linear-gradient(135deg, #5B5FFF 0%, #6366F1 100%)' }}
+                >
+                  {finalising ? 'Finalising…' : <><span>✓</span> Finalize Quote</>}
                 </button>
               </>
             )}
             {readOnly && quoteStat === 'FINALISED' && isGopEligible && (
-              <button onClick={handleCreateGop} disabled={gopBusy} className={BTN_PRIMARY}>
+              <button
+                onClick={handleCreateGop}
+                disabled={gopBusy}
+                className="inline-flex items-center gap-2 px-5 h-10 text-white text-sm font-semibold rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #5B5FFF 0%, #6366F1 100%)' }}
+              >
                 {gopBusy ? '…' : <><ArrowRight className="h-4 w-4" /> Create GOP Request</>}
               </button>
             )}

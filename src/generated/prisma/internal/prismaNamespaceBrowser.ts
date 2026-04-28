@@ -58,7 +58,9 @@ export const ModelName = {
   UserMetadata: 'UserMetadata',
   InsurerConfig: 'InsurerConfig',
   NotificationRule: 'NotificationRule',
-  FeatureFlag: 'FeatureFlag'
+  FeatureFlag: 'FeatureFlag',
+  BillingQuote: 'BillingQuote',
+  BillingQuoteItem: 'BillingQuoteItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -187,6 +189,67 @@ export const FeatureFlagScalarFieldEnum = {
 } as const
 
 export type FeatureFlagScalarFieldEnum = (typeof FeatureFlagScalarFieldEnum)[keyof typeof FeatureFlagScalarFieldEnum]
+
+
+export const BillingQuoteScalarFieldEnum = {
+  id: 'id',
+  quoteNumber: 'quoteNumber',
+  cpiId: 'cpiId',
+  patientName: 'patientName',
+  dob: 'dob',
+  gender: 'gender',
+  phoneNumber: 'phoneNumber',
+  departmentId: 'departmentId',
+  departmentName: 'departmentName',
+  attendingDoctorId: 'attendingDoctorId',
+  attendingDoctorName: 'attendingDoctorName',
+  lengthOfStay: 'lengthOfStay',
+  procedureCode: 'procedureCode',
+  procedureName: 'procedureName',
+  diagnosisCode: 'diagnosisCode',
+  diagnosisDescription: 'diagnosisDescription',
+  provisionalDiagnosis: 'provisionalDiagnosis',
+  doctorOrderSetId: 'doctorOrderSetId',
+  doctorOrderSetName: 'doctorOrderSetName',
+  pricingType: 'pricingType',
+  differentPricingId: 'differentPricingId',
+  employerId: 'employerId',
+  employerName: 'employerName',
+  insurerId: 'insurerId',
+  insurerName: 'insurerName',
+  discountPackageId: 'discountPackageId',
+  discountPackageName: 'discountPackageName',
+  marketingPackageId: 'marketingPackageId',
+  marketingPackageName: 'marketingPackageName',
+  quoteDate: 'quoteDate',
+  status: 'status',
+  totalNetAmount: 'totalNetAmount',
+  gopRequestId: 'gopRequestId',
+  createdBy: 'createdBy',
+  createdByName: 'createdByName',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BillingQuoteScalarFieldEnum = (typeof BillingQuoteScalarFieldEnum)[keyof typeof BillingQuoteScalarFieldEnum]
+
+
+export const BillingQuoteItemScalarFieldEnum = {
+  id: 'id',
+  quoteId: 'quoteId',
+  department: 'department',
+  type: 'type',
+  code: 'code',
+  description: 'description',
+  unit: 'unit',
+  price: 'price',
+  amount: 'amount',
+  discount: 'discount',
+  netAmount: 'netAmount',
+  sortOrder: 'sortOrder'
+} as const
+
+export type BillingQuoteItemScalarFieldEnum = (typeof BillingQuoteItemScalarFieldEnum)[keyof typeof BillingQuoteItemScalarFieldEnum]
 
 
 export const SortOrder = {

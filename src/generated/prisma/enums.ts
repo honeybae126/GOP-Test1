@@ -9,6 +9,19 @@
 * 🟢 You can import this file directly.
 */
 
+export const GOPStatus = {
+  DRAFT: 'DRAFT',
+  SUBMITTED: 'SUBMITTED',
+  DOCTOR_REVIEW: 'DOCTOR_REVIEW',
+  SUBMITTED_TO_INSURER: 'SUBMITTED_TO_INSURER',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED'
+} as const
+
+export type GOPStatus = (typeof GOPStatus)[keyof typeof GOPStatus]
+
+
 export const NotificationEvent = {
   REQUEST_CREATED: 'REQUEST_CREATED',
   REQUEST_ASSIGNED: 'REQUEST_ASSIGNED',
@@ -54,10 +67,23 @@ export const AuditAction = {
   USER_CREATED: 'USER_CREATED',
   USER_DEACTIVATED: 'USER_DEACTIVATED',
   USER_ROLE_CHANGED: 'USER_ROLE_CHANGED',
-  EXPIRY_WARNING_SENT: 'EXPIRY_WARNING_SENT'
+  EXPIRY_WARNING_SENT: 'EXPIRY_WARNING_SENT',
+  BILLING_QUOTE_CREATED: 'BILLING_QUOTE_CREATED',
+  BILLING_QUOTE_UPDATED: 'BILLING_QUOTE_UPDATED',
+  BILLING_QUOTE_FINALISED: 'BILLING_QUOTE_FINALISED',
+  BILLING_GOP_CREATED: 'BILLING_GOP_CREATED'
 } as const
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction]
+
+
+export const BillingStatus = {
+  DRAFT: 'DRAFT',
+  FINALISED: 'FINALISED',
+  GOP_CREATED: 'GOP_CREATED'
+} as const
+
+export type BillingStatus = (typeof BillingStatus)[keyof typeof BillingStatus]
 
 
 export const Role = {

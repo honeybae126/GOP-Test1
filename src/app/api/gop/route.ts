@@ -3,6 +3,22 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createAuditEntry } from '@/lib/audit'
 import { createNotification } from '@/lib/notifications'
+import { z } from 'zod'
+
+const postGopSchema = z.object({
+  patientId:              z.string().min(1, 'patientId is required'),
+  insurerId:              z.string().min(1, 'insurerId is required'),
+  assignedSurgeonId:      z.string().optional().nullable(),
+  assignedAnaesthetistId: z.string().optional().nullable(),
+  formData:               z.any().optional(),
+})
+
+function validationError(error: z.ZodError) {
+  return NextResponse.json(
+    { error: 'Validation failed', issues: error.issues },
+    { status: 400 }
+  )
+}
 
 export async function GET(_request: NextRequest) {
   const session = await auth()
@@ -33,20 +49,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const body = await request.json()
+  const parse = postGopSchema.safeParse(await request.json())
+  if (!parse.success) return validationError(parse.error)
+  const body = parse.data
 
   const created = await prisma.gOPRequest.create({
     data: {
       ...body,
       status: 'DRAFT',
-      createdById: session.user.id as string,
     },
     include: { insurer: true },
   })
 
   await createAuditEntry(
     session.user.id as string,
-role === 'IT_ADMIN' ? 'ADMIN' : 'STAFF',
+    role === 'IT_ADMIN' ? 'ADMIN' : 'STAFF',
     'REQUEST_CREATED',
     created.id
   )

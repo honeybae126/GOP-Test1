@@ -6,6 +6,16 @@
 
 // Define your models below.
 
+enum GOPStatus {
+  DRAFT
+  SUBMITTED
+  DOCTOR_REVIEW
+  SUBMITTED_TO_INSURER
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
 enum NotificationEvent {
   REQUEST_CREATED
   REQUEST_ASSIGNED
@@ -116,7 +126,7 @@ model SystemConfig {
 
 model GOPRequest {
   id               String    @id @default(cuid())
-  status           String    @default("DRAFT")
+  status           GOPStatus @default(DRAFT)
   patientId        String
   insurerId        String
   assignedSurgeonId      String?
@@ -147,7 +157,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-
 }
 
 model UserMetadata {

@@ -2,19 +2,81 @@
 
 import { useSession } from 'next-auth/react'
 import { useActiveRole } from '@/hooks/useActiveRole'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useGopStore } from '@/lib/gop-store'
+import type { MockGOPRequest } from '@/lib/mock-data'
 import { GOPRequestsTable } from '@/components/gop/gop-requests-table'
 import Link from 'next/link'
 
+const isDemoEnabled = process.env.NEXT_PUBLIC_DEMO_AUTH_ENABLED === 'true'
+
+/** Best-effort adapter from Prisma /api/gop response to MockGOPRequest shape.
+ *  Falls back to safe defaults for fields not yet stored in the DB model. */
+function mapApiToMock(raw: unknown[]): MockGOPRequest[] {
+  return raw.map((r: any) => ({
+    id:                    r.id,
+    resourceType:          'Task' as const,
+    status:                r.status ?? 'DRAFT',
+    priority:              'ROUTINE',
+    patientId:             r.patientId ?? '',
+    patientName:           r.patientName ?? r.patientId ?? 'Unknown',
+    encounterId:           r.encounterId ?? '',
+    coverageId:            r.coverageId ?? '',
+    insurer:               r.insurer?.name ?? 'UNKNOWN',
+    questionnaireId:       r.questionnaireId ?? '',
+    assignedSurgeon:       r.assignedSurgeonId ?? null,
+    assignedAnaesthetist:  r.assignedAnaesthetistId ?? null,
+    doctorVerified:        false,
+    surgeonVerified:       false,
+    anaesthetistVerified:  false,
+    financeVerified:       false,
+    staffFinalised:        false,
+    hasAiPrefill:          false,
+    estimatedAmount:       0,
+    cpi:                   1,
+    pricingType:           'NORMAL' as const,
+    appealOf:              null,
+    appealVersion:         1,
+    hasAppeal:             false,
+    appealNotes:           '',
+    appealStatus:          null,
+    stageEnteredAt:        {},
+    createdAt:             r.createdAt ?? new Date().toISOString(),
+    updatedAt:             r.updatedAt ?? new Date().toISOString(),
+    createdBy:             r.createdBy ?? '',
+    quoteNumber:           r.quoteNumber ?? '',
+    quoteDate:             r.quoteDate ?? new Date().toISOString().slice(0, 10),
+    lineItems:             [],
+    auditLog:              [],
+  }))
+}
+
 export default function GOPRequestsPage() {
   const { data: session } = useSession()
-  const allRequests = useGopStore((s) => s.requests) ?? []
-
   const role     = useActiveRole()
   const userName = session?.user?.name ?? ''
   const isDoctor = role === 'DOCTOR'
   const isStaff  = role === 'INSURANCE_STAFF' || role === 'IT_ADMIN'
+
+  const mockRequests = useGopStore((s) => s.requests) ?? []
+
+  const [apiRequests, setApiRequests] = useState<MockGOPRequest[]>([])
+  const [apiLoading, setApiLoading]   = useState(false)
+
+  useEffect(() => {
+    if (isDemoEnabled) return
+    setApiLoading(true)
+    fetch('/api/gop')
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const json = await res.json()
+        setApiRequests(mapApiToMock(Array.isArray(json) ? json : []))
+      })
+      .catch(() => setApiRequests([]))
+      .finally(() => setApiLoading(false))
+  }, [])
+
+  const allRequests = isDemoEnabled ? mockRequests : apiRequests
 
   const requests = useMemo(() => {
     if (!allRequests) return []

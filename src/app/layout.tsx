@@ -1,8 +1,10 @@
+import '@/lib/env'
 import type { Metadata } from 'next'
 import { Inter, Poppins } from 'next/font/google'
 import { SessionProvider } from 'next-auth/react'
 import { auth } from '@/lib/auth'
 import './globals.css'
+import '@fortawesome/fontawesome-free/css/all.min.css'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -31,14 +33,6 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
-        />
-      </head>
       <body style={{ fontFamily: 'var(--font-inter, Inter, sans-serif)' }}>
         <SessionProvider session={session}>
           {children}

@@ -41,20 +41,23 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+    <div className="auth-wrapper">
+      <div className="auth-card">
 
         {/* Hospital branding */}
-        <div className="text-center mb-8">
-          <div className="text-2xl font-semibold text-gray-900">Intercare Hospital</div>
-          <div className="text-sm text-gray-500 mt-1">GOP Automation System</div>
+        <div className="auth-logo" style={{ justifyContent: 'center' }}>
+          <div className="auth-logo-icon">I</div>
+          <div style={{ textAlign: 'center' }}>
+            <div className="auth-logo-name">Intercare Hospital</div>
+            <div className="auth-logo-sub">GOP Automation System</div>
+          </div>
         </div>
 
         {/* Microsoft SSO — primary button */}
         <button
           onClick={handleMicrosoftSignIn}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 bg-[#0078D4] hover:bg-[#106EBE] text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-60"
+          className="btn btn-outline btn-full"
         >
           <svg width="20" height="20" viewBox="0 0 21 21" fill="none">
             <rect x="1"  y="1"  width="9" height="9" fill="#F25022"/>
@@ -68,39 +71,38 @@ export default function SignInPage() {
         {/* Demo credentials — only shown when NEXT_PUBLIC_DEMO_AUTH_ENABLED=true */}
         {isDemoEnabled && (
           <>
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs text-gray-400 bg-white px-2">
-                Demo access only
-              </div>
-            </div>
+            <div className="auth-divider">Demo access only</div>
 
             <form onSubmit={handleDemoSignIn} className="space-y-4">
-              <input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="form-group">
+                <label className="form-label">Email address</label>
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  className="form-input"
+                />
+              </div>
               {error && (
                 <p className="text-red-600 text-sm">{error}</p>
               )}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors disabled:opacity-60"
+                className="btn btn-primary btn-full"
               >
                 {loading ? 'Signing in...' : 'Sign in with demo account'}
               </button>
@@ -109,7 +111,6 @@ export default function SignInPage() {
             <div className="mt-4 text-xs text-gray-400 space-y-1 text-center">
               <div>staff@intercare.com · doctor@intercare.com</div>
               <div>finance@intercare.com · admin@intercare.com</div>
-              <div className="text-gray-300">Password: gop123</div>
             </div>
           </>
         )}

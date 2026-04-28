@@ -81,3 +81,13 @@ export type NotificationRule = Prisma.NotificationRuleModel
  * 
  */
 export type FeatureFlag = Prisma.FeatureFlagModel
+/**
+ * Model BillingQuote
+ * 
+ */
+export type BillingQuote = Prisma.BillingQuoteModel
+/**
+ * Model BillingQuoteItem
+ * 
+ */
+export type BillingQuoteItem = Prisma.BillingQuoteItemModel

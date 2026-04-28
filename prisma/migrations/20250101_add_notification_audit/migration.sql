@@ -112,4 +112,5 @@ CREATE TRIGGER audit_protect_trigger
 -- DROP TYPE IF EXISTS audit_action;
 -- DROP TYPE IF EXISTS audit_actor_role;
 -- DROP TYPE IF EXISTS notification_event;
+-- DROP TYPE IF EXISTS "Role";
 

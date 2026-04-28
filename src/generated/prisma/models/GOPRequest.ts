@@ -26,7 +26,7 @@ export type AggregateGOPRequest = {
 
 export type GOPRequestMinAggregateOutputType = {
   id: string | null
-  status: string | null
+  status: $Enums.GOPStatus | null
   patientId: string | null
   insurerId: string | null
   assignedSurgeonId: string | null
@@ -43,7 +43,7 @@ export type GOPRequestMinAggregateOutputType = {
 
 export type GOPRequestMaxAggregateOutputType = {
   id: string | null
-  status: string | null
+  status: $Enums.GOPStatus | null
   patientId: string | null
   insurerId: string | null
   assignedSurgeonId: string | null
@@ -207,7 +207,7 @@ export type GOPRequestGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
 
 export type GOPRequestGroupByOutputType = {
   id: string
-  status: string
+  status: $Enums.GOPStatus
   patientId: string
   insurerId: string
   assignedSurgeonId: string | null
@@ -247,7 +247,7 @@ export type GOPRequestWhereInput = {
   OR?: Prisma.GOPRequestWhereInput[]
   NOT?: Prisma.GOPRequestWhereInput | Prisma.GOPRequestWhereInput[]
   id?: Prisma.StringFilter<"GOPRequest"> | string
-  status?: Prisma.StringFilter<"GOPRequest"> | string
+  status?: Prisma.EnumGOPStatusFilter<"GOPRequest"> | $Enums.GOPStatus
   patientId?: Prisma.StringFilter<"GOPRequest"> | string
   insurerId?: Prisma.StringFilter<"GOPRequest"> | string
   assignedSurgeonId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
@@ -294,7 +294,7 @@ export type GOPRequestWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.GOPRequestWhereInput | Prisma.GOPRequestWhereInput[]
   OR?: Prisma.GOPRequestWhereInput[]
   NOT?: Prisma.GOPRequestWhereInput | Prisma.GOPRequestWhereInput[]
-  status?: Prisma.StringFilter<"GOPRequest"> | string
+  status?: Prisma.EnumGOPStatusFilter<"GOPRequest"> | $Enums.GOPStatus
   patientId?: Prisma.StringFilter<"GOPRequest"> | string
   insurerId?: Prisma.StringFilter<"GOPRequest"> | string
   assignedSurgeonId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
@@ -341,7 +341,7 @@ export type GOPRequestScalarWhereWithAggregatesInput = {
   OR?: Prisma.GOPRequestScalarWhereWithAggregatesInput[]
   NOT?: Prisma.GOPRequestScalarWhereWithAggregatesInput | Prisma.GOPRequestScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"GOPRequest"> | string
-  status?: Prisma.StringWithAggregatesFilter<"GOPRequest"> | string
+  status?: Prisma.EnumGOPStatusWithAggregatesFilter<"GOPRequest"> | $Enums.GOPStatus
   patientId?: Prisma.StringWithAggregatesFilter<"GOPRequest"> | string
   insurerId?: Prisma.StringWithAggregatesFilter<"GOPRequest"> | string
   assignedSurgeonId?: Prisma.StringNullableWithAggregatesFilter<"GOPRequest"> | string | null
@@ -360,7 +360,7 @@ export type GOPRequestScalarWhereWithAggregatesInput = {
 
 export type GOPRequestCreateInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   assignedSurgeonId?: string | null
   assignedAnaesthetistId?: string | null
@@ -381,7 +381,7 @@ export type GOPRequestCreateInput = {
 
 export type GOPRequestUncheckedCreateInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   insurerId: string
   assignedSurgeonId?: string | null
@@ -402,7 +402,7 @@ export type GOPRequestUncheckedCreateInput = {
 
 export type GOPRequestUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -423,7 +423,7 @@ export type GOPRequestUpdateInput = {
 
 export type GOPRequestUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   insurerId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -444,7 +444,7 @@ export type GOPRequestUncheckedUpdateInput = {
 
 export type GOPRequestCreateManyInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   insurerId: string
   assignedSurgeonId?: string | null
@@ -463,7 +463,7 @@ export type GOPRequestCreateManyInput = {
 
 export type GOPRequestUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -481,7 +481,7 @@ export type GOPRequestUpdateManyMutationInput = {
 
 export type GOPRequestUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   insurerId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -598,6 +598,10 @@ export type GOPRequestUpdateOneWithoutAuditEntriesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.GOPRequestUpdateToOneWithWhereWithoutAuditEntriesInput, Prisma.GOPRequestUpdateWithoutAuditEntriesInput>, Prisma.GOPRequestUncheckedUpdateWithoutAuditEntriesInput>
 }
 
+export type EnumGOPStatusFieldUpdateOperationsInput = {
+  set?: $Enums.GOPStatus
+}
+
 export type GOPRequestCreateNestedManyWithoutInsurerInput = {
   create?: Prisma.XOR<Prisma.GOPRequestCreateWithoutInsurerInput, Prisma.GOPRequestUncheckedCreateWithoutInsurerInput> | Prisma.GOPRequestCreateWithoutInsurerInput[] | Prisma.GOPRequestUncheckedCreateWithoutInsurerInput[]
   connectOrCreate?: Prisma.GOPRequestCreateOrConnectWithoutInsurerInput | Prisma.GOPRequestCreateOrConnectWithoutInsurerInput[]
@@ -642,7 +646,7 @@ export type GOPRequestUncheckedUpdateManyWithoutInsurerNestedInput = {
 
 export type GOPRequestCreateWithoutNotificationsInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   assignedSurgeonId?: string | null
   assignedAnaesthetistId?: string | null
@@ -662,7 +666,7 @@ export type GOPRequestCreateWithoutNotificationsInput = {
 
 export type GOPRequestUncheckedCreateWithoutNotificationsInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   insurerId: string
   assignedSurgeonId?: string | null
@@ -698,7 +702,7 @@ export type GOPRequestUpdateToOneWithWhereWithoutNotificationsInput = {
 
 export type GOPRequestUpdateWithoutNotificationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -718,7 +722,7 @@ export type GOPRequestUpdateWithoutNotificationsInput = {
 
 export type GOPRequestUncheckedUpdateWithoutNotificationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   insurerId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -738,7 +742,7 @@ export type GOPRequestUncheckedUpdateWithoutNotificationsInput = {
 
 export type GOPRequestCreateWithoutAuditEntriesInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   assignedSurgeonId?: string | null
   assignedAnaesthetistId?: string | null
@@ -758,7 +762,7 @@ export type GOPRequestCreateWithoutAuditEntriesInput = {
 
 export type GOPRequestUncheckedCreateWithoutAuditEntriesInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   insurerId: string
   assignedSurgeonId?: string | null
@@ -794,7 +798,7 @@ export type GOPRequestUpdateToOneWithWhereWithoutAuditEntriesInput = {
 
 export type GOPRequestUpdateWithoutAuditEntriesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -814,7 +818,7 @@ export type GOPRequestUpdateWithoutAuditEntriesInput = {
 
 export type GOPRequestUncheckedUpdateWithoutAuditEntriesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   insurerId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -834,7 +838,7 @@ export type GOPRequestUncheckedUpdateWithoutAuditEntriesInput = {
 
 export type GOPRequestCreateWithoutInsurerInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   assignedSurgeonId?: string | null
   assignedAnaesthetistId?: string | null
@@ -854,7 +858,7 @@ export type GOPRequestCreateWithoutInsurerInput = {
 
 export type GOPRequestUncheckedCreateWithoutInsurerInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   assignedSurgeonId?: string | null
   assignedAnaesthetistId?: string | null
@@ -903,7 +907,7 @@ export type GOPRequestScalarWhereInput = {
   OR?: Prisma.GOPRequestScalarWhereInput[]
   NOT?: Prisma.GOPRequestScalarWhereInput | Prisma.GOPRequestScalarWhereInput[]
   id?: Prisma.StringFilter<"GOPRequest"> | string
-  status?: Prisma.StringFilter<"GOPRequest"> | string
+  status?: Prisma.EnumGOPStatusFilter<"GOPRequest"> | $Enums.GOPStatus
   patientId?: Prisma.StringFilter<"GOPRequest"> | string
   insurerId?: Prisma.StringFilter<"GOPRequest"> | string
   assignedSurgeonId?: Prisma.StringNullableFilter<"GOPRequest"> | string | null
@@ -922,7 +926,7 @@ export type GOPRequestScalarWhereInput = {
 
 export type GOPRequestCreateManyInsurerInput = {
   id?: string
-  status?: string
+  status?: $Enums.GOPStatus
   patientId: string
   assignedSurgeonId?: string | null
   assignedAnaesthetistId?: string | null
@@ -940,7 +944,7 @@ export type GOPRequestCreateManyInsurerInput = {
 
 export type GOPRequestUpdateWithoutInsurerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -960,7 +964,7 @@ export type GOPRequestUpdateWithoutInsurerInput = {
 
 export type GOPRequestUncheckedUpdateWithoutInsurerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -980,7 +984,7 @@ export type GOPRequestUncheckedUpdateWithoutInsurerInput = {
 
 export type GOPRequestUncheckedUpdateManyWithoutInsurerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumGOPStatusFieldUpdateOperationsInput | $Enums.GOPStatus
   patientId?: Prisma.StringFieldUpdateOperationsInput | string
   assignedSurgeonId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assignedAnaesthetistId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1141,7 +1145,7 @@ export type $GOPRequestPayload<ExtArgs extends runtime.Types.Extensions.Internal
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    status: string
+    status: $Enums.GOPStatus
     patientId: string
     insurerId: string
     assignedSurgeonId: string | null
@@ -1583,7 +1587,7 @@ export interface Prisma__GOPRequestClient<T, Null = never, ExtArgs extends runti
  */
 export interface GOPRequestFieldRefs {
   readonly id: Prisma.FieldRef<"GOPRequest", 'String'>
-  readonly status: Prisma.FieldRef<"GOPRequest", 'String'>
+  readonly status: Prisma.FieldRef<"GOPRequest", 'GOPStatus'>
   readonly patientId: Prisma.FieldRef<"GOPRequest", 'String'>
   readonly insurerId: Prisma.FieldRef<"GOPRequest", 'String'>
   readonly assignedSurgeonId: Prisma.FieldRef<"GOPRequest", 'String'>

@@ -2,8 +2,61 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
+import { z } from 'zod'
 
 const ALLOWED_ROLES = ['INSURANCE_STAFF', 'IT_ADMIN', 'ADMIN', 'BILLING_STAFF']
+
+const quoteItemSchema = z.object({
+  department:  z.string().optional(),
+  type:        z.string().optional(),
+  code:        z.string().optional(),
+  description: z.string().optional(),
+  unit:        z.number().optional(),
+  price:       z.number().optional(),
+  amount:      z.number().optional(),
+  discount:    z.number().optional(),
+  netAmount:   z.number().optional(),
+})
+
+const postQuoteSchema = z.object({
+  cpiId:                z.string().optional(),
+  patientName:          z.string().optional(),
+  dob:                  z.string().optional().nullable(),
+  gender:               z.string().optional().nullable(),
+  phoneNumber:          z.string().optional().nullable(),
+  departmentId:         z.string().optional().nullable(),
+  departmentName:       z.string().optional().nullable(),
+  attendingDoctorId:    z.string().optional().nullable(),
+  attendingDoctorName:  z.string().optional().nullable(),
+  lengthOfStay:         z.number().optional().nullable(),
+  procedureCode:        z.string().optional().nullable(),
+  procedureName:        z.string().optional().nullable(),
+  diagnosisCode:        z.string().optional().nullable(),
+  diagnosisDescription: z.string().optional().nullable(),
+  provisionalDiagnosis: z.string().optional().nullable(),
+  doctorOrderSetId:     z.string().optional().nullable(),
+  doctorOrderSetName:   z.string().optional().nullable(),
+  pricingType:          z.enum(['NORMAL', 'DIFFERENT']).optional(),
+  differentPricingId:   z.string().optional().nullable(),
+  employerId:           z.string().optional().nullable(),
+  employerName:         z.string().optional().nullable(),
+  insurerId:            z.string().optional(),
+  insurerName:          z.string().optional(),
+  discountPackageId:    z.string().optional().nullable(),
+  discountPackageName:  z.string().optional().nullable(),
+  marketingPackageId:   z.string().optional().nullable(),
+  marketingPackageName: z.string().optional().nullable(),
+  quoteDate:            z.string().optional(),
+  totalNetAmount:       z.number().optional(),
+  items:                z.array(quoteItemSchema).optional(),
+})
+
+function validationError(error: z.ZodError) {
+  return NextResponse.json(
+    { error: 'Validation failed', issues: error.issues },
+    { status: 400 }
+  )
+}
 
 // ── Quote number generator: Q-YYYYMMDD-XXXX ──────────────────────────────────
 async function generateQuoteNumber(): Promise<string> {
@@ -76,7 +129,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const body = await req.json()
+  const parse = postQuoteSchema.safeParse(await req.json())
+  if (!parse.success) return validationError(parse.error)
+  const body = parse.data
   const quoteNumber = await generateQuoteNumber()
 
   const {

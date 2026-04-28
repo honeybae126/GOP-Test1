@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createAuditEntry } from '@/lib/audit'
+import { z } from 'zod'
+
+const patchGopSchema = z.object({
+  formData: z.any().optional(),
+  status:   z.enum(['DRAFT', 'SUBMITTED', 'DOCTOR_REVIEW', 'SUBMITTED_TO_INSURER', 'APPROVED', 'REJECTED', 'EXPIRED']).optional(),
+})
+
+function validationError(error: z.ZodError) {
+  return NextResponse.json(
+    { error: 'Validation failed', issues: error.issues },
+    { status: 400 }
+  )
+}
 
 export async function GET(
   _request: NextRequest,
@@ -42,8 +55,9 @@ export async function PATCH(
   }
 
   const { id } = await params
-  const body = await request.json()
-  const { formData, status } = body
+  const parse = patchGopSchema.safeParse(await request.json())
+  if (!parse.success) return validationError(parse.error)
+  const { formData, status } = parse.data
 
   const existing = await prisma.gOPRequest.findUnique({ where: { id } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })

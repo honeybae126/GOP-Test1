@@ -26,6 +26,7 @@ import {
   User, Upload, FileText, Stethoscope, DollarSign,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Toggle } from '@/components/ui/toggle'
 
 // ─── Types (unchanged) ────────────────────────────────────────────────────────
 interface Opt       { id: string; name: string }
@@ -41,40 +42,11 @@ interface QuoteRow {
   unit: number; price: number; amount: number; discount: number; netAmount: number
 }
 
-// ─── Design tokens — SynthCare visual language ────────────────────────────────
-// Filled inputs (SynthCare --input: #F3F4F6), hover lift on buttons, Poppins-style headings
-const F  = 'w-full h-10 px-4 text-sm text-gray-800 bg-gray-100 rounded-lg border-0 focus:outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/20 transition-all placeholder:text-gray-400'
-const RO = 'w-full h-10 px-4 text-sm text-gray-500 bg-gray-100 rounded-lg border-0 cursor-not-allowed opacity-80'
-const BTN_PRIMARY   = 'inline-flex items-center gap-2 px-5 h-10 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 hover:-translate-y-0.5 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none'
-const BTN_SECONDARY = 'inline-flex items-center gap-2 px-5 h-10 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 hover:-translate-y-0.5 transition-all disabled:opacity-50 bg-white shadow-sm'
-const BTN_GHOST     = 'inline-flex items-center gap-2 px-4 h-9 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors bg-white'
-const BTN_OUTLINE   = 'inline-flex items-center gap-2 px-4 h-9 text-sm font-medium text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors'
-const LABEL = 'block text-sm font-medium text-gray-500 mb-1.5'
+// ─── Design tokens (not yet in design system) ─────────────────────────────────
+const BTN_GHOST    = 'inline-flex items-center gap-2 px-4 h-9 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors bg-white'
+const BTN_OUTLINE  = 'inline-flex items-center gap-2 px-4 h-9 text-sm font-medium text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors'
 
 // ─── UI-only sub-components ───────────────────────────────────────────────────
-
-/** Toggle switch — SynthCare style: smooth pill, shadow thumb */
-function Toggle({ checked, onChange, disabled, label, id }: {
-  checked: boolean; onChange: (v: boolean) => void
-  disabled?: boolean; label: string; id: string
-}) {
-  return (
-    <label htmlFor={id} className={`flex items-center gap-3 select-none ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-      <button
-        type="button"
-        role="switch"
-        id={id}
-        aria-checked={checked}
-        disabled={disabled}
-        onClick={() => !disabled && onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:ring-offset-1 ${checked ? 'bg-primary-600' : 'bg-gray-200'} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-      >
-        <span className={`pointer-events-none inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out ${checked ? 'translate-x-[22px]' : 'translate-x-[3px]'}`} />
-      </button>
-      <span className="text-sm font-medium text-gray-700">{label}</span>
-    </label>
-  )
-}
 
 /** SectionCard — SynthCare card style: white, subtle shadow, Poppins heading */
 function SectionCard({ title, icon, children, className = '' }: {
@@ -97,7 +69,7 @@ function SectionCard({ title, icon, children, className = '' }: {
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <span className={LABEL}>{label}</span>
+      <span className="form-label">{label}</span>
       {children}
     </div>
   )
@@ -111,7 +83,7 @@ function GOPSelect({ value, onChange, options, placeholder = '', loading = false
   return (
     <div className="relative w-full">
       <select
-        className={`${F} appearance-none pr-10 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+        className={`form-input appearance-none pr-10 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
         value={value}
         disabled={disabled || loading}
         onChange={e => {
@@ -551,12 +523,12 @@ export function BillingForm() {
 
           {/* CPI search — full width */}
           <div className="mb-6">
-            <span className={LABEL}>CPI — Patient Lookup</span>
+            <span className="form-label">CPI — Patient Lookup</span>
             <div className="flex gap-3 max-w-lg relative">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 <input
-                  className={`${F} pl-10`}
+                  className="form-input pl-10"
                   value={cpiRaw}
                   onChange={e => handleCpiSearch(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleCpiSearch(cpiRaw)}
@@ -589,7 +561,7 @@ export function BillingForm() {
               <button
                 onClick={() => handleCpiSearch(cpiRaw)}
                 disabled={readOnly}
-                className={BTN_PRIMARY}
+                className="btn btn-primary"
               >
                 {cpiLoading ? '…' : <><Search className="h-4 w-4" /> Search</>}
               </button>
@@ -600,16 +572,16 @@ export function BillingForm() {
           <div className="grid grid-cols-[1fr_auto] gap-8 items-start">
             <div className="grid grid-cols-2 gap-x-6 gap-y-5">
               <FormField label="Patient Name">
-                <input className={readOnly ? RO : F} value={patName} onChange={e => setPatName(e.target.value)} readOnly={readOnly} placeholder="Auto-filled from CPI lookup" />
+                <input className="form-input" value={patName} onChange={e => setPatName(e.target.value)} readOnly={readOnly} placeholder="Auto-filled from CPI lookup" />
               </FormField>
               <FormField label="Date of Birth">
-                <input type="date" className={readOnly ? RO : F} value={dob} onChange={e => setDob(e.target.value)} readOnly={readOnly} />
+                <input type="date" className="form-input" value={dob} onChange={e => setDob(e.target.value)} readOnly={readOnly} />
               </FormField>
               <FormField label="Gender">
                 {readOnly
-                  ? <input className={RO} value={gender} readOnly />
+                  ? <input className="form-input" value={gender} readOnly />
                   : <div className="relative">
-                      <select className={`${F} appearance-none pr-10`} value={gender} onChange={e => setGender(e.target.value)}>
+                      <select className="form-input appearance-none pr-10" value={gender} onChange={e => setGender(e.target.value)}>
                         <option value="">Select gender</option>
                         <option value="M">Male</option>
                         <option value="F">Female</option>
@@ -619,14 +591,14 @@ export function BillingForm() {
                 }
               </FormField>
               <FormField label="Age (auto-calculated)">
-                <input className={RO} value={age !== '' ? `${age} years` : ''} readOnly placeholder="—" />
+                <input className="form-input" value={age !== '' ? `${age} years` : ''} readOnly placeholder="—" />
               </FormField>
               <FormField label="Phone Number">
-                <input className={readOnly ? RO : F} value={phone} onChange={e => setPhone(e.target.value)} readOnly={readOnly} placeholder="Contact number" />
+                <input className="form-input" value={phone} onChange={e => setPhone(e.target.value)} readOnly={readOnly} placeholder="Contact number" />
               </FormField>
               <FormField label="Department">
                 {readOnly
-                  ? <input className={RO} value={deptName} readOnly />
+                  ? <input className="form-input" value={deptName} readOnly />
                   : <GOPSelect value={deptId} options={depts} loading={dropLoading}
                       onChange={(id, nm) => { setDeptId(id); setDeptName(nm) }} placeholder="Select department…" />
                 }
@@ -650,7 +622,7 @@ export function BillingForm() {
           <div className="grid grid-cols-2 gap-x-6 gap-y-5">
             <FormField label="Attending Doctor">
               {readOnly
-                ? <input className={RO} value={doctorName} readOnly />
+                ? <input className="form-input" value={doctorName} readOnly />
                 : <GOPSelect value={doctorId}
                     options={doctors.map(d => ({ id: d.id, name: d.specialty ? `${d.name} (${d.specialty})` : d.name }))}
                     loading={dropLoading}
@@ -658,11 +630,11 @@ export function BillingForm() {
               }
             </FormField>
             <FormField label="Length of Stay (days)">
-              <input type="number" min={0} className={readOnly ? RO : F} value={los} onChange={e => setLos(e.target.value)} readOnly={readOnly} placeholder="Number of days" />
+              <input type="number" min={0} className="form-input" value={los} onChange={e => setLos(e.target.value)} readOnly={readOnly} placeholder="Number of days" />
             </FormField>
             <FormField label="Procedure">
               {readOnly
-                ? <input className={RO} value={procName} readOnly />
+                ? <input className="form-input" value={procName} readOnly />
                 : <GOPSelect value={procCode}
                     options={procs.map(p => ({ id: p.code, name: p.name }))}
                     placeholder={deptId ? 'Select procedure…' : 'Select a department first'}
@@ -671,7 +643,7 @@ export function BillingForm() {
             </FormField>
             <FormField label="Doctor Order Set">
               {readOnly
-                ? <input className={RO} value={orderSetNm} readOnly />
+                ? <input className="form-input" value={orderSetNm} readOnly />
                 : <GOPSelect value={orderSetId} options={orderSets} loading={dropLoading}
                     onChange={(id, nm) => { setOrderSetId(id); setOrderSetNm(nm) }} placeholder="Select order set…" />
               }
@@ -681,7 +653,7 @@ export function BillingForm() {
             <FormField label="Diagnosis (ICD-10)">
               <div className="relative">
                 <input
-                  className={readOnly ? RO : F}
+                  className="form-input"
                   value={diagInput || (diagCode ? `${diagCode} — ${diagDesc}` : '')}
                   onChange={e => { setDiagInput(e.target.value); setShowDiag(true) }}
                   onFocus={() => setShowDiag(true)}
@@ -706,7 +678,7 @@ export function BillingForm() {
               </div>
             </FormField>
             <FormField label="Provisional Diagnosis">
-              <input className={readOnly ? RO : F} value={provDiag} onChange={e => setProvDiag(e.target.value)} readOnly={readOnly} placeholder="Optional provisional notes" />
+              <input className="form-input" value={provDiag} onChange={e => setProvDiag(e.target.value)} readOnly={readOnly} placeholder="Optional provisional notes" />
             </FormField>
           </div>
         </SectionCard>
@@ -733,35 +705,35 @@ export function BillingForm() {
 
               {!normalPricing && (
                 <FormField label="Different Pricing ID">
-                  <input className={readOnly ? RO : F} value={diffPricingId}
+                  <input className="form-input" value={diffPricingId}
                     onChange={e => setDiffPricingId(e.target.value)} placeholder="Pricing code…" readOnly={readOnly} />
                 </FormField>
               )}
 
               <FormField label="Employer">
                 {readOnly
-                  ? <input className={RO} value={employerNm} readOnly />
+                  ? <input className="form-input" value={employerNm} readOnly />
                   : <GOPSelect value={employerId} options={employers} loading={dropLoading}
                       onChange={(id, nm) => { setEmployerId(id); setEmployerNm(nm) }} placeholder="None" />
                 }
               </FormField>
               <FormField label="Insurance / Sponsor">
                 {readOnly
-                  ? <input className={RO} value={insName} readOnly />
+                  ? <input className="form-input" value={insName} readOnly />
                   : <GOPSelect value={insId} options={insurers} loading={dropLoading}
                       onChange={(id, nm) => { setInsId(id); setInsName(nm) }} placeholder="Select insurer…" />
                 }
               </FormField>
               <FormField label="Discount Package">
                 {readOnly
-                  ? <input className={RO} value={discPkgNm} readOnly />
+                  ? <input className="form-input" value={discPkgNm} readOnly />
                   : <GOPSelect value={discPkgId} options={discPkgs} loading={dropLoading}
                       onChange={(id, nm) => { setDiscPkgId(id); setDiscPkgNm(nm) }} placeholder="None" />
                 }
               </FormField>
               <FormField label="Marketing Package">
                 {readOnly
-                  ? <input className={RO} value={mktPkgNm} readOnly />
+                  ? <input className="form-input" value={mktPkgNm} readOnly />
                   : <GOPSelect value={mktPkgId} options={mktPkgs} loading={dropLoading}
                       onChange={(id, nm) => { setMktPkgId(id); setMktPkgNm(nm) }} placeholder="None" />
                 }
@@ -773,10 +745,10 @@ export function BillingForm() {
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Quote Information</p>
 
               <FormField label="Quote Number">
-                <input className={`${RO} font-mono`} value={quoteNum || '(auto-generated on save)'} readOnly />
+                <input className="form-input font-mono" value={quoteNum || '(auto-generated on save)'} readOnly />
               </FormField>
               <FormField label="Quote Date">
-                <input type="date" className={readOnly ? RO : F} value={quoteDate} onChange={e => setQuoteDate(e.target.value)} readOnly={readOnly} />
+                <input type="date" className="form-input" value={quoteDate} onChange={e => setQuoteDate(e.target.value)} readOnly={readOnly} />
               </FormField>
               <FormField label="Status">
                 <div className="flex items-center h-11">
@@ -784,13 +756,13 @@ export function BillingForm() {
                 </div>
               </FormField>
               <FormField label="Created By">
-                <input className={RO} value={userName} readOnly />
+                <input className="form-input" value={userName} readOnly />
               </FormField>
 
               {/* Apply button — loads pricing from HIS */}
               {!readOnly && (
                 <div className="pt-2">
-                  <button onClick={handleApply} disabled={applying} className={`${BTN_PRIMARY} w-full justify-center`}>
+                  <button onClick={handleApply} disabled={applying} className="btn btn-primary w-full justify-center">
                     {applying ? 'Loading HIS pricing…' : <><FileText className="h-4 w-4" /> Apply Pricing</>}
                   </button>
                 </div>
@@ -1049,10 +1021,10 @@ export function BillingForm() {
 
           {/* Right — action buttons */}
           <div className="flex items-center gap-3">
-            <button onClick={resetForm} className={BTN_SECONDARY}>Cancel</button>
+            <button onClick={resetForm} className="btn btn-outline">Cancel</button>
             {!readOnly && (
               <>
-                <button onClick={() => doSave()} disabled={saving} className={BTN_SECONDARY}>
+                <button onClick={() => doSave()} disabled={saving} className="btn btn-outline">
                   {saving ? 'Saving…' : 'Save Draft'}
                 </button>
                 <button

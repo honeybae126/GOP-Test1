@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { Toggle } from '@/components/ui/toggle'
 
 const DOCTOR_EVENTS = [
   { key: 'REQUEST_ASSIGNED',      label: 'Request assigned to you',  description: 'When Insurance Staff assigns a GOP request to you.', mandatory: true },
@@ -48,31 +49,6 @@ function KVRow({ label, value, first }: { label: string; value: React.ReactNode;
       <span className="kv-label">{label}</span>
       <span className="kv-value">{value}</span>
     </div>
-  )
-}
-
-function Toggle({ checked, disabled, onChange }: { checked: boolean; disabled?: boolean; onChange?: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={() => onChange?.(!checked)}
-      style={{
-        width: '2.5rem', height: '1.25rem', borderRadius: '9999px', border: 'none',
-        background: checked ? 'var(--primary)' : 'var(--muted)', cursor: disabled ? 'not-allowed' : 'pointer',
-        position: 'relative', transition: 'background var(--transition-base)', flexShrink: 0, opacity: disabled ? 0.6 : 1,
-      }}
-    >
-      <span style={{
-        position: 'absolute', top: '0.125rem',
-        left: checked ? '1.375rem' : '0.125rem',
-        width: '1rem', height: '1rem', borderRadius: '9999px',
-        background: 'white', transition: 'left var(--transition-base)',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-      }} />
-    </button>
   )
 }
 

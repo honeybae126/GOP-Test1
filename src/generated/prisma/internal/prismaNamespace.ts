@@ -80,11 +80,11 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.7.0
+ * Prisma Client JS version: 7.6.0
  * Query Engine version: 75cbdc1eb7150937890ad5465d861175c6624711
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.7.0",
+  client: "7.6.0",
   engine: "75cbdc1eb7150937890ad5465d861175c6624711"
 }
 
@@ -391,7 +391,9 @@ export const ModelName = {
   UserMetadata: 'UserMetadata',
   InsurerConfig: 'InsurerConfig',
   NotificationRule: 'NotificationRule',
-  FeatureFlag: 'FeatureFlag'
+  FeatureFlag: 'FeatureFlag',
+  BillingQuote: 'BillingQuote',
+  BillingQuoteItem: 'BillingQuoteItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -407,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "notification" | "auditEntry" | "systemConfig" | "gOPRequest" | "userMetadata" | "insurerConfig" | "notificationRule" | "featureFlag"
+    modelProps: "notification" | "auditEntry" | "systemConfig" | "gOPRequest" | "userMetadata" | "insurerConfig" | "notificationRule" | "featureFlag" | "billingQuote" | "billingQuoteItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1003,6 +1005,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    BillingQuote: {
+      payload: Prisma.$BillingQuotePayload<ExtArgs>
+      fields: Prisma.BillingQuoteFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BillingQuoteFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BillingQuoteFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload>
+        }
+        findFirst: {
+          args: Prisma.BillingQuoteFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BillingQuoteFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload>
+        }
+        findMany: {
+          args: Prisma.BillingQuoteFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload>[]
+        }
+        create: {
+          args: Prisma.BillingQuoteCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload>
+        }
+        createMany: {
+          args: Prisma.BillingQuoteCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BillingQuoteCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload>[]
+        }
+        delete: {
+          args: Prisma.BillingQuoteDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload>
+        }
+        update: {
+          args: Prisma.BillingQuoteUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload>
+        }
+        deleteMany: {
+          args: Prisma.BillingQuoteDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BillingQuoteUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BillingQuoteUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload>[]
+        }
+        upsert: {
+          args: Prisma.BillingQuoteUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuotePayload>
+        }
+        aggregate: {
+          args: Prisma.BillingQuoteAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBillingQuote>
+        }
+        groupBy: {
+          args: Prisma.BillingQuoteGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BillingQuoteGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BillingQuoteCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BillingQuoteCountAggregateOutputType> | number
+        }
+      }
+    }
+    BillingQuoteItem: {
+      payload: Prisma.$BillingQuoteItemPayload<ExtArgs>
+      fields: Prisma.BillingQuoteItemFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BillingQuoteItemFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BillingQuoteItemFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload>
+        }
+        findFirst: {
+          args: Prisma.BillingQuoteItemFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BillingQuoteItemFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload>
+        }
+        findMany: {
+          args: Prisma.BillingQuoteItemFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload>[]
+        }
+        create: {
+          args: Prisma.BillingQuoteItemCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload>
+        }
+        createMany: {
+          args: Prisma.BillingQuoteItemCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BillingQuoteItemCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload>[]
+        }
+        delete: {
+          args: Prisma.BillingQuoteItemDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload>
+        }
+        update: {
+          args: Prisma.BillingQuoteItemUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload>
+        }
+        deleteMany: {
+          args: Prisma.BillingQuoteItemDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BillingQuoteItemUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BillingQuoteItemUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload>[]
+        }
+        upsert: {
+          args: Prisma.BillingQuoteItemUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BillingQuoteItemPayload>
+        }
+        aggregate: {
+          args: Prisma.BillingQuoteItemAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBillingQuoteItem>
+        }
+        groupBy: {
+          args: Prisma.BillingQuoteItemGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BillingQuoteItemGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BillingQuoteItemCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BillingQuoteItemCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1152,6 +1302,67 @@ export const FeatureFlagScalarFieldEnum = {
 } as const
 
 export type FeatureFlagScalarFieldEnum = (typeof FeatureFlagScalarFieldEnum)[keyof typeof FeatureFlagScalarFieldEnum]
+
+
+export const BillingQuoteScalarFieldEnum = {
+  id: 'id',
+  quoteNumber: 'quoteNumber',
+  cpiId: 'cpiId',
+  patientName: 'patientName',
+  dob: 'dob',
+  gender: 'gender',
+  phoneNumber: 'phoneNumber',
+  departmentId: 'departmentId',
+  departmentName: 'departmentName',
+  attendingDoctorId: 'attendingDoctorId',
+  attendingDoctorName: 'attendingDoctorName',
+  lengthOfStay: 'lengthOfStay',
+  procedureCode: 'procedureCode',
+  procedureName: 'procedureName',
+  diagnosisCode: 'diagnosisCode',
+  diagnosisDescription: 'diagnosisDescription',
+  provisionalDiagnosis: 'provisionalDiagnosis',
+  doctorOrderSetId: 'doctorOrderSetId',
+  doctorOrderSetName: 'doctorOrderSetName',
+  pricingType: 'pricingType',
+  differentPricingId: 'differentPricingId',
+  employerId: 'employerId',
+  employerName: 'employerName',
+  insurerId: 'insurerId',
+  insurerName: 'insurerName',
+  discountPackageId: 'discountPackageId',
+  discountPackageName: 'discountPackageName',
+  marketingPackageId: 'marketingPackageId',
+  marketingPackageName: 'marketingPackageName',
+  quoteDate: 'quoteDate',
+  status: 'status',
+  totalNetAmount: 'totalNetAmount',
+  gopRequestId: 'gopRequestId',
+  createdBy: 'createdBy',
+  createdByName: 'createdByName',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BillingQuoteScalarFieldEnum = (typeof BillingQuoteScalarFieldEnum)[keyof typeof BillingQuoteScalarFieldEnum]
+
+
+export const BillingQuoteItemScalarFieldEnum = {
+  id: 'id',
+  quoteId: 'quoteId',
+  department: 'department',
+  type: 'type',
+  code: 'code',
+  description: 'description',
+  unit: 'unit',
+  price: 'price',
+  amount: 'amount',
+  discount: 'discount',
+  netAmount: 'netAmount',
+  sortOrder: 'sortOrder'
+} as const
+
+export type BillingQuoteItemScalarFieldEnum = (typeof BillingQuoteItemScalarFieldEnum)[keyof typeof BillingQuoteItemScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1307,6 +1518,20 @@ export type ListEnumAuditActionFieldRefInput<$PrismaModel> = FieldRefInputType<$
 
 
 /**
+ * Reference to a field of type 'GOPStatus'
+ */
+export type EnumGOPStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GOPStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'GOPStatus[]'
+ */
+export type ListEnumGOPStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GOPStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
@@ -1324,6 +1549,48 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
  * Reference to a field of type 'Int[]'
  */
 export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BillingStatus'
+ */
+export type EnumBillingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BillingStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'BillingStatus[]'
+ */
+export type ListEnumBillingStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BillingStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Decimal'
+ */
+export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
+    
+
+
+/**
+ * Reference to a field of type 'Decimal[]'
+ */
+export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'Float[]'
+ */
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 /**
@@ -1429,6 +1696,8 @@ export type GlobalOmitConfig = {
   insurerConfig?: Prisma.InsurerConfigOmit
   notificationRule?: Prisma.NotificationRuleOmit
   featureFlag?: Prisma.FeatureFlagOmit
+  billingQuote?: Prisma.BillingQuoteOmit
+  billingQuoteItem?: Prisma.BillingQuoteItemOmit
 }
 
 /* Types for Logging */

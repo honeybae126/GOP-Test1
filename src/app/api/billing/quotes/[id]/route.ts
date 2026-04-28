@@ -1,8 +1,61 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
 
 const ALLOWED_ROLES = ['INSURANCE_STAFF', 'IT_ADMIN', 'ADMIN', 'BILLING_STAFF']
+
+const quoteItemSchema = z.object({
+  department:  z.string().optional(),
+  type:        z.string().optional(),
+  code:        z.string().optional(),
+  description: z.string().optional(),
+  unit:        z.number().optional(),
+  price:       z.number().optional(),
+  amount:      z.number().optional(),
+  discount:    z.number().optional(),
+  netAmount:   z.number().optional(),
+})
+
+const patchQuoteSchema = z.object({
+  cpiId:                z.string().optional().nullable(),
+  patientName:          z.string().optional().nullable(),
+  dob:                  z.string().optional().nullable(),
+  gender:               z.string().optional().nullable(),
+  phoneNumber:          z.string().optional().nullable(),
+  departmentId:         z.string().optional().nullable(),
+  departmentName:       z.string().optional().nullable(),
+  attendingDoctorId:    z.string().optional().nullable(),
+  attendingDoctorName:  z.string().optional().nullable(),
+  lengthOfStay:         z.number().optional().nullable(),
+  procedureCode:        z.string().optional().nullable(),
+  procedureName:        z.string().optional().nullable(),
+  diagnosisCode:        z.string().optional().nullable(),
+  diagnosisDescription: z.string().optional().nullable(),
+  provisionalDiagnosis: z.string().optional().nullable(),
+  doctorOrderSetId:     z.string().optional().nullable(),
+  doctorOrderSetName:   z.string().optional().nullable(),
+  pricingType:          z.enum(['NORMAL', 'DIFFERENT']).optional().nullable(),
+  differentPricingId:   z.string().optional().nullable(),
+  employerId:           z.string().optional().nullable(),
+  employerName:         z.string().optional().nullable(),
+  insurerId:            z.string().optional().nullable(),
+  insurerName:          z.string().optional().nullable(),
+  discountPackageId:    z.string().optional().nullable(),
+  discountPackageName:  z.string().optional().nullable(),
+  marketingPackageId:   z.string().optional().nullable(),
+  marketingPackageName: z.string().optional().nullable(),
+  quoteDate:            z.string().optional().nullable(),
+  totalNetAmount:       z.number().optional().nullable(),
+  items:                z.array(quoteItemSchema).optional(),
+})
+
+function validationError(error: z.ZodError) {
+  return NextResponse.json(
+    { error: 'Validation failed', issues: error.issues },
+    { status: 400 }
+  )
+}
 
 // GET /api/billing/quotes/:id — fetch single quote with items
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -41,7 +94,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Only DRAFT quotes can be updated' }, { status: 409 })
   }
 
-  const body = await req.json()
+  const parse = patchQuoteSchema.safeParse(await req.json())
+  if (!parse.success) return validationError(parse.error)
   const {
     cpiId, patientName, dob, gender, phoneNumber,
     departmentId, departmentName, attendingDoctorId, attendingDoctorName,
@@ -53,7 +107,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     discountPackageId, discountPackageName,
     marketingPackageId, marketingPackageName,
     quoteDate, totalNetAmount, items,
-  } = body
+  } = parse.data
 
   await prisma.$executeRaw`
     UPDATE billing_quotes SET

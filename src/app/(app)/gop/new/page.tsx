@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { NewGOPWizard } from '@/components/gop/new-gop-wizard'
-import { MOCK_PATIENTS, MOCK_COVERAGES, MOCK_ENCOUNTERS, MOCK_COST_ESTIMATES } from '@/lib/mock-data'
+import { MOCK_ENCOUNTERS, MOCK_COST_ESTIMATES } from '@/lib/mock-data'
 
 export default async function NewGOPPage({
   searchParams,
@@ -36,8 +36,6 @@ export default async function NewGOPPage({
         overflow: 'hidden',
       }}>
         <NewGOPWizard
-          patients={MOCK_PATIENTS}
-          coverages={MOCK_COVERAGES}
           encounters={MOCK_ENCOUNTERS}
           estimates={MOCK_COST_ESTIMATES || []}
           preselectedPatientId={patientId}

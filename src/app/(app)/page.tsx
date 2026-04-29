@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { RecentRequestsTable } from '@/components/dashboard/recent-requests-table'
-import { MOCK_GOP_REQUESTS } from '@/lib/mock-data'
+import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -10,14 +10,40 @@ export default async function DashboardPage() {
   if (session?.user?.role === 'DOCTOR') redirect('/dashboard/doctor')
   if (session?.user?.role === 'FINANCE') redirect('/gop')
 
-  const requests = MOCK_GOP_REQUESTS || []
-  const recentRequests = requests.slice(0, 5)
+  const requests = await prisma.gOPRequest.findMany({
+    include: { insurer: true },
+    orderBy: { createdAt: 'desc' },
+  })
 
+  // Adapt the Prisma shape to the minimal fields RecentRequestsTable displays.
+  // Fields not yet in the Prisma schema (patientName, quoteNumber, estimatedAmount,
+  // priority, assignedSurgeon name) are sourced from the formData JSONB column where
+  // available, otherwise fall back to safe defaults.
+  const recentRequests = requests.slice(0, 5).map(r => {
+    const fd = (r.formData as Record<string, unknown> | null) ?? {}
+    return {
+      id:              r.id,
+      status:          r.status,
+      createdAt:       r.createdAt.toISOString(),
+      insurer:         r.insurer.name,
+      patientName:     (fd.patientName  as string | undefined) ?? r.patientId,
+      quoteNumber:     (fd.billingQuoteNumber as string | undefined) ?? '—',
+      estimatedAmount: Number(fd.estimatedCost ?? 0),
+      priority:        'ROUTINE' as const,
+      assignedSurgeon: r.assignedSurgeonId ?? null,
+    }
+  })
+
+  // pendingVerifications: DRAFT requests where at least one doctor has not yet verified.
   const pendingVerifications = requests.filter(
-    r => r.status === 'DRAFT' && !((r.surgeonVerified ?? r.doctorVerified) && (r.anaesthetistVerified ?? r.doctorVerified))
+    r => r.status === 'DRAFT' && (r.surgeonVerifiedAt == null || r.anaesthetistVerifiedAt == null)
   ).length
 
-  const awaitingSubmission = requests.filter(r => r.status === 'DRAFT' && r.staffFinalised === true).length
+  // awaitingSubmission: staffFinalised has no Prisma column.
+  // Closest equivalent: DRAFT requests where both doctors have verified (ready to submit).
+  const awaitingSubmission = requests.filter(
+    r => r.status === 'DRAFT' && r.surgeonVerifiedAt != null && r.anaesthetistVerifiedAt != null
+  ).length
   const awaitingDecision   = requests.filter(r => r.status === 'SUBMITTED').length
   const approvedCount      = requests.filter(r => r.status === 'APPROVED').length
 
@@ -123,7 +149,8 @@ export default async function DashboardPage() {
               View all <i className="fas fa-arrow-right" style={{ fontSize: '0.75rem' }} />
             </Link>
           </div>
-          <RecentRequestsTable requests={recentRequests} />
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <RecentRequestsTable requests={recentRequests as any} />
         </div>
 
       </div>

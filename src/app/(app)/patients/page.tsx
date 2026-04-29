@@ -1,7 +1,6 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { PatientSearchList } from '@/components/patients/patient-search-list'
-import { MOCK_PATIENTS, MOCK_COVERAGES } from '@/lib/mock-data'
 
 export default async function PatientsPage() {
   const session = await auth()
@@ -18,7 +17,7 @@ export default async function PatientsPage() {
       </div>
 
       <div style={{ padding: 'var(--spacing-lg)' }}>
-        <PatientSearchList patients={MOCK_PATIENTS} coverages={MOCK_COVERAGES} />
+        <PatientSearchList />
       </div>
     </div>
   )

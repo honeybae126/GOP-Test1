@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useActiveRole } from '@/hooks/useActiveRole'
@@ -48,17 +48,30 @@ export default function FinanceVerificationPage() {
   const patient  = req ? getPatientById(req.patientId) : null
   const coverage = req ? getCoverageByPatientId(req.patientId) : null
 
-  const surgeonDone      = req?.surgeonVerified ?? req?.doctorVerified ?? false
-  const anaesthetistDone = req?.anaesthetistVerified ?? req?.doctorVerified ?? false
+  const [pendingItems, setPendingItems] = useState<CostLineItem[] | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  // Fetch fresh Prisma record to read real surgeon/anaesthetist verification timestamps
+  const [apiReq, setApiReq] = useState<{
+    surgeonVerifiedAt: string | null
+    anaesthetistVerifiedAt: string | null
+  } | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/gop/${id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setApiReq(data) })
+      .catch(() => {})
+  }, [id])
+
+  const surgeonDone      = !!apiReq?.surgeonVerifiedAt
+  const anaesthetistDone = !!apiReq?.anaesthetistVerifiedAt
   const bothDone         = surgeonDone && anaesthetistDone
 
   const canEditCost = isFinance && !req?.financeVerified
 
   const lockUser = session?.user?.email ? { email: session.user.email, name: session.user.name ?? '' } : null
   const { conflictName, dismissed, dismiss } = useEditLock(id, lockUser)
-
-  const [pendingItems, setPendingItems] = useState<CostLineItem[] | null>(null)
-  const [saving, setSaving] = useState(false)
 
   if (!req) return null
 

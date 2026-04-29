@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
-  MOCK_GOP_REQUESTS,
   type GOPStatus,
   type GOPPriority,
   type MockGOPRequest,
@@ -55,6 +54,8 @@ interface GOPState {
   setEmployer:             (id: string, employer: string | null, performer: Performer) => void
   // Legacy alias kept so existing call sites don't break
   setDoctorVerified:       (id: string) => void
+  // Replaces in-memory seed with real data from Prisma via GET /api/gop
+  fetchGOPRequests:        () => Promise<void>
 }
 
 function makeEntry(action: AuditEntry['action'], performer: Performer, detail?: string): AuditEntry {
@@ -80,7 +81,7 @@ function generateQuoteNumber(counter: number): string {
 export const useGopStore = create<GOPState>()(
   persist(
     (set, get) => ({
-      requests:        structuredClone(MOCK_GOP_REQUESTS),
+      requests:        [],
       gopQuoteCounter: 9,
 
       setSurgeonVerified: (id, performer, regNumber?: string) =>
@@ -488,6 +489,17 @@ export const useGopStore = create<GOPState>()(
             )
           }),
         })),
+
+      fetchGOPRequests: async () => {
+        try {
+          const res = await fetch('/api/gop')
+          if (!res.ok) throw new Error('Failed to fetch GOP requests')
+          const data = await res.json()
+          set({ requests: data })
+        } catch (error) {
+          console.error('fetchGOPRequests error:', error)
+        }
+      },
     }),
     {
       name:       'gop-store-v5',

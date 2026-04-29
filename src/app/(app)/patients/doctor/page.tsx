@@ -1,17 +1,32 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { prisma } from '@/lib/prisma'
 import { DoctorPatientSearch } from '@/components/patients/doctor-patient-search'
 import {
-  MOCK_PATIENTS,
   MOCK_ENCOUNTERS,
   MOCK_COVERAGES,
-  MOCK_GOP_REQUESTS,
 } from '@/lib/mock-data'
 
 export default async function DoctorPatientSearchPage() {
   const session = await auth()
   if (!session) redirect('/auth/signin')
   if (session.user?.role !== 'DOCTOR') redirect('/patients')
+
+  const gopRaw = await prisma.gOPRequest.findMany({
+    select: {
+      id:        true,
+      patientId: true,
+      status:    true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+  const gopRequests = gopRaw.map(r => ({
+    id:        r.id,
+    patientId: r.patientId,
+    status:    r.status as string,
+    createdAt: r.createdAt.toISOString(),
+  }))
 
   return (
     <div>
@@ -21,11 +36,12 @@ export default async function DoctorPatientSearchPage() {
           Search and filter patients by ward, admission date, or assigned physician.
         </p>
       </div>
+      {/* patients={[]} — MOCK_PATIENTS removed; DoctorPatientSearch needs encounter API before it can be fully wired */}
       <DoctorPatientSearch
-        patients={MOCK_PATIENTS}
+        patients={[]}
         encounters={MOCK_ENCOUNTERS}
         coverages={MOCK_COVERAGES}
-        gopRequests={MOCK_GOP_REQUESTS}
+        gopRequests={gopRequests as any}
       />
     </div>
   )

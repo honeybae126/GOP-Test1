@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { MOCK_GOP_REQUESTS } from '@/lib/mock-data'
+import { prisma } from '@/lib/prisma'
 
 const ACTION_CONFIG: Record<string, { icon: string; label: string }> = {
   REQUEST_CREATED:        { icon: 'fas fa-file-plus',       label: 'Request created' },
@@ -29,9 +29,30 @@ export default async function AdminAuditPage() {
   const session = await auth()
   if (!session?.user || session.user.role !== 'IT_ADMIN') redirect('/')
 
-  const allEvents = MOCK_GOP_REQUESTS.flatMap((req) =>
-    (req.auditLog ?? []).map((entry) => ({ ...entry, gopId: req.id, patientName: req.patientName }))
-  ).sort((a, b) => new Date(b.performedAt).getTime() - new Date(a.performedAt).getTime())
+  const auditEntries = await prisma.auditEntry.findMany({
+    include: {
+      actor:      { select: { displayName: true } },
+      gopRequest: { select: { formData: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  const allEvents = auditEntries.map(entry => {
+    const fd   = (entry.gopRequest?.formData as Record<string, unknown> | null) ?? {}
+    const meta = (entry.metadata           as Record<string, unknown> | null) ?? {}
+    return {
+      id:              entry.id,
+      action:          entry.action as string,
+      performedBy:     entry.actor?.displayName ?? entry.actorId ?? 'System',
+      performedByRole: entry.actorRole as string,
+      gopId:           entry.requestId ?? '',
+      patientName:     (fd.patientName        as string | undefined) ?? '',
+      detail:          (meta.detail           as string | undefined)
+                    ?? (meta.correctionNotes  as string | undefined)
+                    ?? null,
+      performedAt:     entry.createdAt.toISOString(),
+    }
+  })
 
   return (
     <div className="page-container">

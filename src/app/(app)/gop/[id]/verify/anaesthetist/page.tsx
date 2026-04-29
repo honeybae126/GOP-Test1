@@ -335,7 +335,7 @@ export default function AnaesthetistVerificationPage() {
     fetch(`/api/gop/${id}/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ verificationRole: 'anaesthetist', anaesthetistName, regNumber }),
+      body: JSON.stringify({ verificationRole: 'anaesthetist', role: 'anaesthetist', anaesthetistName, regNumber }),
     }).catch(() => {})
 
     toast.success('Anaesthetist verification submitted. Staff can now finalise.')

@@ -39,8 +39,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'GOP requests can only be created for AIA or ASSURNET insurers' }, { status: 422 })
   }
 
-  // If GOP already created, return existing ID
+  // If GOP already created — check verification status before returning
   if (quote.gopRequestId) {
+    // Gate — both doctors must have verified before billing/insurance can proceed
+    const gopRecord = await prisma.gOPRequest.findUnique({
+      where: { id: quote.gopRequestId },
+      select: {
+        surgeonVerifiedAt: true,
+        anaesthetistVerifiedAt: true,
+      },
+    })
+
+    if (!gopRecord) {
+      return NextResponse.json(
+        { error: 'GOP request not found.' },
+        { status: 404 }
+      )
+    }
+
+    if (!gopRecord.surgeonVerifiedAt || !gopRecord.anaesthetistVerifiedAt) {
+      return NextResponse.json(
+        {
+          error: 'Both surgeon and anaesthetist must verify the quotation form before it can be sent to billing or insurance.',
+          surgeonVerified: !!gopRecord.surgeonVerifiedAt,
+          anaesthetistVerified: !!gopRecord.anaesthetistVerifiedAt,
+        },
+        { status: 403 }
+      )
+    }
+
     return NextResponse.json({ gopRequestId: quote.gopRequestId, alreadyExists: true })
   }
 

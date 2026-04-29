@@ -131,6 +131,10 @@ model GOPRequest {
   insurerId        String
   assignedSurgeonId      String?
   assignedAnaesthetistId String?
+  surgeonVerifiedAt       DateTime?
+  surgeonVerifiedBy       String?
+  anaesthetistVerifiedAt  DateTime?
+  anaesthetistVerifiedBy  String?
   formData         Json?
   submittedAt      DateTime?
   expiresAt        DateTime?

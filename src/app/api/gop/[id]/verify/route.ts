@@ -17,7 +17,17 @@ export async function POST(
   }
 
   const { id } = await params
-  const { correctionNotes } = await request.json().catch(() => ({}))
+  const body = await request.json().catch(() => ({}))
+  const { correctionNotes, role: doctorRole } = body
+
+  if (!correctionNotes) {
+    if (!doctorRole || (doctorRole !== 'surgeon' && doctorRole !== 'anaesthetist')) {
+      return NextResponse.json(
+        { error: "Missing or invalid role. Must be 'surgeon' or 'anaesthetist'." },
+        { status: 400 }
+      )
+    }
+  }
 
   const existing = await prisma.gOPRequest.findUnique({
     where: { id },
@@ -52,10 +62,16 @@ export async function POST(
     return NextResponse.json({ ok: true, action: 'correction_requested' })
   }
 
-  // Verification — mark as verified in formData
+  // Verification — write role-specific columns + keep legacy formData fields
+  const verificationData =
+    doctorRole === 'surgeon'
+      ? { surgeonVerifiedAt: new Date(), surgeonVerifiedBy: session.user.id ?? null }
+      : { anaesthetistVerifiedAt: new Date(), anaesthetistVerifiedBy: session.user.id ?? null }
+
   const updated = await prisma.gOPRequest.update({
     where: { id },
     data: {
+      ...verificationData,
       formData: {
         ...(typeof existing.formData === 'object' && existing.formData !== null
           ? (existing.formData as Record<string, unknown>)

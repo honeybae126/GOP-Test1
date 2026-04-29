@@ -1,6 +1,4 @@
-import type { GOPStatus } from '@/lib/mock-data'
-
-const STATUS_CONFIG: Record<GOPStatus, { icon: string; label: string; cls: string }> = {
+const STATUS_CONFIG: Record<string, { icon: string; label: string; cls: string }> = {
   DRAFT:     { icon: 'fas fa-pencil-alt', label: 'Draft',     cls: 'badge badge-draft' },
   SUBMITTED: { icon: 'fas fa-paper-plane', label: 'Submitted', cls: 'badge badge-submitted' },
   APPROVED:  { icon: 'fas fa-check-circle', label: 'Approved', cls: 'badge badge-approved' },
@@ -9,7 +7,7 @@ const STATUS_CONFIG: Record<GOPStatus, { icon: string; label: string; cls: strin
 }
 
 interface GOPStatusBadgeProps {
-  status: GOPStatus
+  status: string
 }
 
 export function GOPStatusBadge({ status }: GOPStatusBadgeProps) {

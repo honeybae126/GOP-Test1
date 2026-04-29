@@ -109,6 +109,19 @@ export default function GOPFormPage() {
   const [hisLoading, setHisLoading]         = useState(false)
   const searchRef                           = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Fetch fresh Prisma record to check real verification status for gates
+  const [apiReq, setApiReq] = useState<{
+    surgeonVerifiedAt: string | null
+    anaesthetistVerifiedAt: string | null
+  } | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/gop/${id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setApiReq(data) })
+      .catch(() => {})
+  }, [id])
+
   // Debounced patient search — fires after 350ms idle
   const handleSearchInput = (q: string) => {
     setSearchQuery(q)
@@ -138,7 +151,46 @@ export default function GOPFormPage() {
       const data = await res.json()
       if (data.found) {
         setHisData(data as HisData)
-        // Initialise editable HIS fields from fetched data
+
+        // Gate — block billing-sensitive auto-fill until both doctors have verified
+        const bothVerified = !!apiReq?.surgeonVerifiedAt && !!apiReq?.anaesthetistVerifiedAt
+
+        if (!bothVerified) {
+          // Safe identity fields only — always fill regardless of verification status
+          setHisFields({
+            fullName:      data.patient?.fullName      ?? '',
+            dob:           data.patient?.dob           ?? '',
+            nric:          data.patient?.nric          ?? '',
+            address:       data.patient?.address       ?? '',
+            contactNumber: data.patient?.contactNumber ?? '',
+            // Billing-sensitive fields blocked until both doctors verify
+            policyNumber:  '',
+            memberId:      '',
+            admissionDate: '',
+            roomType:      '',
+            diagnosisCode: '',
+            diagnosisDesc: '',
+          })
+          setOriginalHisFields({
+            fullName:      data.patient?.fullName      ?? '',
+            dob:           data.patient?.dob           ?? '',
+            nric:          data.patient?.nric          ?? '',
+            address:       data.patient?.address       ?? '',
+            contactNumber: data.patient?.contactNumber ?? '',
+            policyNumber:  '',
+            memberId:      '',
+            admissionDate: '',
+            roomType:      '',
+            diagnosisCode: '',
+            diagnosisDesc: '',
+          })
+          toast.warning(
+            'Patient clinical and billing fields cannot be auto-filled until both surgeon and anaesthetist have verified their sections of the quotation form.'
+          )
+          return
+        }
+
+        // Both verified — full auto-fill as originally written
         setHisFields({
           fullName:      data.patient?.fullName      ?? '',
           dob:           data.patient?.dob           ?? '',
@@ -198,11 +250,13 @@ export default function GOPFormPage() {
   // Sync state from req when it loads
   useEffect(() => {
     if (!req) return
+    // Gate — do not sync pricing/coverage data until both doctors have verified
+    if (!apiReq?.surgeonVerifiedAt || !apiReq?.anaesthetistVerifiedAt) return
     setCpiInput(String(req.cpi ?? 1))
     setPricingTypeLocal(req.pricingType ?? 'NORMAL')
     setPricingUnit(req.pricingUnit ?? '')
     setMarketingPkg(req.marketingPackage ?? '')
-  }, [req?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [req?.id, apiReq?.surgeonVerifiedAt, apiReq?.anaesthetistVerifiedAt]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Redirect roles that shouldn't access this page
   useEffect(() => {

@@ -4,7 +4,7 @@ import { useParams, notFound, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useActiveRole } from '@/hooks/useActiveRole'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGopStore } from '@/lib/gop-store'
 import { ReassignDoctorModal } from '@/components/gop/reassign-doctor-modal'
 import { EditLockBanner } from '@/components/gop/edit-lock-banner'
@@ -153,15 +153,6 @@ function AuditTimeline({ auditLog }: { auditLog: AuditEntry[] }) {
   )
 }
 
-const MOCK_DOCTORS = [
-  'Dr. Sok Phearith',
-  'Dr. Chan Reaksmey',
-  'Dr. Roeun Chanveasna',
-  'Dr. Lim Pagna',
-  'Dr. Keo Sophea',
-  'Dr. Sophea Meas',
-]
-
 function AssignAnaesthetistModal({
   open, onClose, gopId, performer,
 }: {
@@ -171,8 +162,25 @@ function AssignAnaesthetistModal({
   performer: { name: string; role: string }
 }) {
   const assignAnaesthetist = useGopStore((s) => s.assignAnaesthetist)
-  const [selected, setSelected] = useState('')
+  const [selected, setSelected]     = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [doctors, setDoctors]       = useState<string[]>([])
+  const [loading, setLoading]       = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setSelected('')
+    setLoading(true)
+    fetch('/api/his/doctors')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDoctors(data.map((d: { name: string }) => d.name).filter(Boolean))
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [open])
 
   function handleConfirm() {
     if (!selected) return
@@ -196,12 +204,12 @@ function AssignAnaesthetistModal({
         </DialogHeader>
         <div className="space-y-1.5 py-1">
           <Label htmlFor="ana-select">Anaesthetist</Label>
-          <Select value={selected} onValueChange={setSelected}>
+          <Select value={selected} onValueChange={setSelected} disabled={loading}>
             <SelectTrigger id="ana-select">
-              <SelectValue placeholder="Select a doctor…" />
+              <SelectValue placeholder={loading ? 'Loading doctors…' : doctors.length === 0 ? 'HIS unavailable' : 'Select a doctor…'} />
             </SelectTrigger>
             <SelectContent>
-              {MOCK_DOCTORS.map((d) => (
+              {doctors.map((d) => (
                 <SelectItem key={d} value={d}>{d}</SelectItem>
               ))}
             </SelectContent>

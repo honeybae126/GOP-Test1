@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,6 @@ import {
   formatPatientName,
   calculateAge,
   MOCK_ENCOUNTERS,
-  MOCK_GOP_REQUESTS,
   MOCK_COST_ESTIMATES,
 } from '@/lib/mock-data'
 import {
@@ -81,7 +81,23 @@ export default async function PatientDetailPage({
 
   const coverage = getCoverageByPatientId(id)
   const encounters = MOCK_ENCOUNTERS.filter(e => e.subject.reference === `Patient/${id}`)
-  const gopRequests = MOCK_GOP_REQUESTS.filter(r => r.patientId === id)
+  const gopRaw = await prisma.gOPRequest.findMany({
+    where:   { patientId: id },
+    include: { insurer: true },
+    orderBy: { createdAt: 'desc' },
+  })
+  const gopRequests = gopRaw.map(r => {
+    const fd = (r.formData as Record<string, unknown> | null) ?? {}
+    return {
+      id:              r.id,
+      status:          r.status,
+      createdAt:       r.createdAt.toISOString(),
+      insurer:         r.insurer.name,
+      quoteNumber:     (fd.billingQuoteNumber as string | undefined) ?? '—',
+      estimatedAmount: Number(fd.estimatedCost ?? 0),
+      assignedSurgeon: r.assignedSurgeonId ?? null,
+    }
+  })
   const name = formatPatientName(patient)
   const age = calculateAge(patient.birthDate)
   const hospitalId = patient.identifier.find(i => i.system === 'hospital.local/id')?.value

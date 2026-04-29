@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useActiveRole } from '@/hooks/useActiveRole'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import type { MockPatient, MockCoverage, MockEncounter, MockCostEstimate, GOPPriority } from '@/lib/mock-data'
-import { formatPatientName, calculateAge, MOCK_QUESTIONNAIRES } from '@/lib/mock-data'
+import type { MockEncounter, MockCostEstimate, GOPPriority } from '@/lib/mock-data'
+import { MOCK_QUESTIONNAIRES } from '@/lib/mock-data'
 import { useGopStore } from '@/lib/gop-store'
 import { Search, Shield, ChevronRight, ChevronLeft, CheckCircle, Sparkles, FileText, AlertTriangle, Check } from 'lucide-react'
 
@@ -53,11 +53,12 @@ const STEPS = [
   { id: 4, label: 'Review',       icon: 'fas fa-check-double' },
 ]
 
+type HisPatientResult = { patientId: string; fullName: string; dob: string; nric: string }
+type HisCoverage      = { insurer: string; policyNumber: string; memberId: string }
+
 interface NewGOPWizardProps {
-  patients: MockPatient[]
-  coverages: MockCoverage[]
   encounters: MockEncounter[]
-  estimates: MockCostEstimate[]
+  estimates:  MockCostEstimate[]
   preselectedPatientId?: string
 }
 
@@ -124,7 +125,7 @@ function InsurerBadge({ insurer }: { insurer: string }) {
 }
 
 /* ─── Main wizard ─────────────────────────────────────────────────────────── */
-export function NewGOPWizard({ patients, coverages, encounters, estimates, preselectedPatientId }: NewGOPWizardProps) {
+export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: NewGOPWizardProps) {
   const [step, setStep]                       = useState(preselectedPatientId ? 2 : 1)
   const [selectedPatientId, setSelectedPatientId] = useState(preselectedPatientId ?? '')
   const [selectedEncounterId, setSelectedEncounterId] = useState('')
@@ -137,44 +138,60 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
   const { data: session } = useSession()
   const activeRole = useActiveRole()
 
-  const coverageMap = useMemo(() => {
-    const map: Record<string, MockCoverage> = {}
-    if (Array.isArray(coverages)) {
-      coverages.forEach(c => {
-        const pid = c.beneficiary.reference.split('/')[1]
-        map[pid] = c
-      })
-    }
-    return map
-  }, [coverages])
+  // HIS patient search state
+  const [hisResults,         setHisResults]         = useState<HisPatientResult[]>([])
+  const [hisLoading,         setHisLoading]         = useState(false)
+  const [hisOffline,         setHisOffline]         = useState(false)
+  const [selectedHisPatient, setSelectedHisPatient] = useState<HisPatientResult | null>(null)
+  const [selectedCoverage,   setSelectedCoverage]   = useState<HisCoverage | null>(null)
+  const [coverageLoading,    setCoverageLoading]    = useState(false)
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const selectedPatient   = Array.isArray(patients)  ? patients.find(p => p.id === selectedPatientId) : undefined
-  const selectedCoverage  = selectedPatientId ? coverageMap[selectedPatientId] : undefined
+  // Debounced HIS patient search
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    if (search.length < 2) { setHisResults([]); return }
+    setHisLoading(true)
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res  = await fetch(`/api/his/patients?q=${encodeURIComponent(search)}`)
+        const data = await res.json()
+        if (data.offline) { setHisOffline(true); setHisResults([]) }
+        else { setHisOffline(false); setHisResults(Array.isArray(data) ? data : (data.results ?? [])) }
+      } catch { setHisOffline(true); setHisResults([]) }
+      finally { setHisLoading(false) }
+    }, 350)
+  }, [search])
+
+  // Select a patient and fetch their insurance from HIS
+  const handleSelectPatient = async (r: HisPatientResult) => {
+    setSelectedPatientId(r.patientId)
+    setSelectedHisPatient(r)
+    setSelectedCoverage(null)
+    setCoverageLoading(true)
+    try {
+      const res  = await fetch(`/api/his/patient?nric=${encodeURIComponent(r.nric)}`)
+      const data = await res.json()
+      if (data.found && data.insurance) {
+        setSelectedCoverage({
+          insurer:      data.insurance.insurerCode ?? data.insurance.insurerName ?? '',
+          policyNumber: data.insurance.policyNumber ?? '',
+          memberId:     data.insurance.memberId ?? '',
+        })
+      }
+    } catch { /* coverage unavailable */ }
+    finally { setCoverageLoading(false) }
+  }
+
   const patientEncounters = Array.isArray(encounters) ? encounters.filter(e => e.subject.reference === `Patient/${selectedPatientId}`) : []
   const selectedEncounter = Array.isArray(encounters) ? encounters.find(e => e.id === selectedEncounterId) : undefined
   const selectedEstimate  = Array.isArray(estimates)  ? (estimates.find(e => e.encounterId === selectedEncounterId) ?? null) : null
   const selectedForm      = (MOCK_QUESTIONNAIRES || []).find(q => q.id === selectedFormId) ?? null
 
-  const filteredPatients = useMemo(() => {
-    const q = search.toLowerCase()
-    if (!Array.isArray(patients)) return []
-    return patients.filter(p =>
-      !q ||
-      formatPatientName(p).toLowerCase().includes(q) ||
-      p.identifier.some(i => i.value.toLowerCase().includes(q))
-    )
-  }, [patients, search])
-
-  const isCoverageExpired = (cov: MockCoverage | undefined) => {
-    if (!cov) return false
-    if (cov.status !== 'active') return true
-    const endDate = cov.period?.end ?? cov.coverageDates?.end
-    return endDate ? new Date(endDate) < new Date() : false
-  }
-  const coverageExpired = isCoverageExpired(selectedCoverage)
+  const coverageExpired   = false // HIS coverage is live; assume active when present
 
   const canContinue =
-    (step === 1 && !!selectedPatientId && !!selectedCoverage) ||
+    (step === 1 && !!selectedPatientId && !!selectedCoverage && !coverageLoading) ||
     (step === 2 && !!selectedEncounterId) ||
     (step === 3 && !!selectedFormId) ||
     step === 4
@@ -307,83 +324,74 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
               scrollbarWidth: 'thin',
               scrollbarColor: 'var(--muted) transparent',
             }}>
-              {filteredPatients.length === 0 && (
+              {/* HIS search prompts */}
+              {search.length < 2 && !hisLoading && (
                 <div style={{ textAlign: 'center', padding: '32px 0', fontSize: 'var(--font-size-sm)', color: C.muted }}>
-                  No patients match your search.
+                  Type at least 2 characters to search the HIS.
                 </div>
               )}
-              {filteredPatients.map(p => {
-                const cov         = coverageMap[p.id]
-                const noCoverage  = !cov
-                const isSelected  = p.id === selectedPatientId
-                const hospitalId  = p.identifier.find(i => i.system === 'hospital.local/id')?.value
-                const age         = calculateAge(p.birthDate)
-                const name        = formatPatientName(p)
+              {hisLoading && (
+                <div style={{ textAlign: 'center', padding: '24px 0', color: C.muted }}>
+                  <i className="fas fa-spinner fa-spin" style={{ marginRight: 8 }} />Searching…
+                </div>
+              )}
+              {hisOffline && (
+                <div style={{ padding: '12px 16px', borderRadius: C.radMd, background: '#FFF7ED', color: '#92400E', fontSize: 'var(--font-size-sm)' }}>
+                  <i className="fas fa-exclamation-triangle" style={{ marginRight: 8 }} />HIS is currently unreachable.
+                </div>
+              )}
+              {!hisLoading && !hisOffline && search.length >= 2 && hisResults.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '32px 0', fontSize: 'var(--font-size-sm)', color: C.muted }}>
+                  No patients found.
+                </div>
+              )}
+              {hisResults.map(r => {
+                const isSelected  = r.patientId === selectedPatientId
+                const age         = r.dob ? Math.floor((Date.now() - new Date(r.dob).getTime()) / (365.25 * 86400000)) : null
 
                 return (
                   <div
-                    key={p.id}
-                    onClick={() => !noCoverage && setSelectedPatientId(p.id)}
-                    title={noCoverage ? 'No active coverage — cannot create GOP request' : undefined}
+                    key={r.patientId}
+                    onClick={() => handleSelectPatient(r)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 14,
                       padding: '14px 16px', borderRadius: C.radMd,
-                      border: `1.5px solid ${isSelected ? C.primary : noCoverage ? C.border : C.border}`,
-                      background: isSelected ? C.primarySub : noCoverage ? C.gray50 : C.bgCard,
-                      cursor: noCoverage ? 'not-allowed' : 'pointer',
-                      opacity: noCoverage ? 0.5 : 1,
-                      transition: C.transition,
+                      border: `1.5px solid ${isSelected ? C.primary : C.border}`,
+                      background: isSelected ? C.primarySub : C.bgCard,
+                      cursor: 'pointer', transition: C.transition,
                     }}
-                    onMouseEnter={e => {
-                      if (!noCoverage && !isSelected) {
-                        (e.currentTarget as HTMLDivElement).style.background = C.gray50
-                        ;(e.currentTarget as HTMLDivElement).style.borderColor = C.borderMed
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (!noCoverage && !isSelected) {
-                        (e.currentTarget as HTMLDivElement).style.background = C.bgCard
-                        ;(e.currentTarget as HTMLDivElement).style.borderColor = C.border
-                      }
-                    }}
+                    onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = C.gray50 }}
+                    onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = C.bgCard }}
                   >
-                    {/* Avatar */}
-                    <PatientAvatar name={name} size={40} />
+                    <PatientAvatar name={r.fullName} size={40} />
 
-                    {/* Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: C.fg, lineHeight: 1.3 }}>
-                        {name}
+                        {r.fullName}
                       </div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontFamily: 'var(--font-mono)' }}>{hospitalId}</span>
-                        <span style={{ width: 3, height: 3, borderRadius: '50%', background: C.gray400, display: 'inline-block' }} />
-                        <span>{age} yrs</span>
-                        <span style={{ width: 3, height: 3, borderRadius: '50%', background: C.gray400, display: 'inline-block' }} />
-                        <span>{p.gender}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>{r.nric}</span>
+                        {age !== null && <>
+                          <span style={{ width: 3, height: 3, borderRadius: '50%', background: C.gray400, display: 'inline-block' }} />
+                          <span>{age} yrs</span>
+                        </>}
                       </div>
                     </div>
 
-                    {/* Coverage / selected indicator */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                      {cov ? (
-                        <InsurerBadge insurer={cov.insurer} />
-                      ) : (
-                        <span style={{
-                          fontSize: 11, fontWeight: 600, padding: '3px 10px',
-                          borderRadius: C.radFull, background: '#FEF2F2',
-                          color: 'var(--destructive)', border: '1px solid #FECACA',
-                        }}>
+                      {isSelected && coverageLoading && (
+                        <span style={{ fontSize: 11, color: C.muted }}>Checking coverage…</span>
+                      )}
+                      {isSelected && !coverageLoading && selectedCoverage && (
+                        <InsurerBadge insurer={selectedCoverage.insurer} />
+                      )}
+                      {isSelected && !coverageLoading && !selectedCoverage && (
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: C.radFull, background: '#FEF2F2', color: 'var(--destructive)', border: '1px solid #FECACA' }}>
                           No coverage
                         </span>
                       )}
                       {isSelected && (
-                        <div style={{
-                          width: 20, height: 20, borderRadius: C.radFull,
-                          background: 'var(--gradient-primary)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          boxShadow: 'var(--shadow-primary-sm)',
-                        }}>
+                        <div style={{ width: 20, height: 20, borderRadius: C.radFull, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-primary-sm)' }}>
                           <Check style={{ width: 11, height: 11, color: '#fff' }} />
                         </div>
                       )}
@@ -394,7 +402,7 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
             </div>
 
             {/* No coverage warning */}
-            {selectedPatient && !selectedCoverage && (
+            {selectedHisPatient && !coverageLoading && !selectedCoverage && (
               <Alert variant="warning">
                 <AlertTriangle className="size-4" />
                 <AlertTitle>No Active Coverage — Cannot Proceed</AlertTitle>
@@ -412,7 +420,7 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
         <WizardCard>
           <CardSection
             label="Select Encounter"
-            sub={selectedPatient ? `Choose an encounter for ${formatPatientName(selectedPatient)}` : 'Choose the clinical encounter for this GOP request.'}
+            sub={selectedHisPatient ? `Choose an encounter for ${selectedHisPatient.fullName}` : 'Choose the clinical encounter for this GOP request.'}
           />
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {patientEncounters.length === 0 ? (
@@ -506,7 +514,7 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
           <CardSection
             label="Select Insurer Form"
             sub={selectedCoverage
-              ? `Coverage: ${selectedCoverage.insurer} — ${selectedCoverage.planName}`
+              ? `Coverage: ${selectedCoverage.insurer} — ${selectedCoverage.policyNumber}`
               : 'Select the applicable pre-authorisation form.'}
           />
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -615,8 +623,8 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
             {/* Summary table */}
             <div style={{ background: C.gray50, borderRadius: C.radMd, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
               {[
-                { label: 'Patient',        value: selectedPatient ? formatPatientName(selectedPatient) : '—', icon: 'fas fa-user' },
-                { label: 'Coverage',       value: selectedCoverage ? `${selectedCoverage.insurer} — ${selectedCoverage.planName}` : '—', icon: 'fas fa-shield-alt' },
+                { label: 'Patient',        value: selectedHisPatient?.fullName ?? '—', icon: 'fas fa-user' },
+                { label: 'Coverage',       value: selectedCoverage ? `${selectedCoverage.insurer} — ${selectedCoverage.policyNumber}` : '—', icon: 'fas fa-shield-alt' },
                 { label: 'Encounter',      value: selectedEncounter?.reasonCode?.[0]?.text ?? '—', icon: 'fas fa-stethoscope' },
                 { label: 'Doctor',         value: selectedEncounter?.participant[0]?.individual.display ?? '—', icon: 'fas fa-user-md' },
                 { label: 'Estimated Cost', value: selectedEstimate ? `$${selectedEstimate.total.toLocaleString()} USD` : '—', icon: 'fas fa-dollar-sign' },
@@ -777,9 +785,9 @@ export function NewGOPWizard({ patients, coverages, encounters, estimates, prese
               onClick={() => {
                 const newId = createGOPRequest({
                   patientId:       selectedPatientId,
-                  patientName:     selectedPatient ? formatPatientName(selectedPatient) : '',
+                  patientName:     selectedHisPatient?.fullName ?? '',
                   encounterId:     selectedEncounterId,
-                  coverageId:      selectedCoverage?.id ?? '',
+                  coverageId:      selectedCoverage?.policyNumber ?? '',
                   insurer:         selectedCoverage?.insurer ?? '',
                   questionnaireId: selectedFormId,
                   assignedSurgeon: selectedEncounter?.participant[0]?.individual.display ?? null,

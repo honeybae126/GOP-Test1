@@ -345,7 +345,7 @@ export default function SurgeonVerificationPage() {
     fetch(`/api/gop/${id}/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ verificationRole: 'surgeon', surgeonName, regNumber }),
+      body: JSON.stringify({ verificationRole: 'surgeon', role: 'surgeon', surgeonName, regNumber }),
     }).catch(() => {})
 
     toast.success('Surgeon verification submitted.')

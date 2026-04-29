@@ -12,14 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, UserCog } from 'lucide-react'
 import { toast } from 'sonner'
 
-// Fallback mock doctor list when DB is unavailable
-const MOCK_DOCTORS = [
-  'Dr. Sok Phearith',
-  'Dr. Chan Reaksmey',
-  'Dr. Roeun Chanveasna',
-  'Dr. Lim Pagna',
-  'Dr. Keo Sophea',
-]
 
 interface ReassignDoctorModalProps {
   open: boolean
@@ -41,7 +33,7 @@ export function ReassignDoctorModal({
   const reassignDoctor = useGopStore((s) => s.reassignDoctor)
 
   const [role, setRole] = useState<'surgeon' | 'anaesthetist'>('surgeon')
-  const [doctors, setDoctors] = useState<string[]>(MOCK_DOCTORS)
+  const [doctors, setDoctors] = useState<string[]>([])
   const [selected, setSelected] = useState('')
   const [reason, setReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -54,14 +46,14 @@ export function ReassignDoctorModal({
     setRole('surgeon')
     setSelected('')
     setReason('')
-    fetch('/api/users?role=DOCTOR')
+    fetch('/api/his/doctors')
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setDoctors(data.map((u: { displayName?: string; name?: string }) => u.displayName ?? u.name ?? '').filter(Boolean))
+          setDoctors(data.map((d: { name: string }) => d.name).filter(Boolean))
         }
       })
-      .catch(() => {}) // silently use mock list
+      .catch(() => {})
   }, [open])
 
   const canSubmit = selected && selected !== currentDoctor && reason.trim().length > 0

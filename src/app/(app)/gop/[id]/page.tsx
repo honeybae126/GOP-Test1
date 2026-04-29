@@ -17,17 +17,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog'
 import {
-  getPatientById,
-  getCoverageByPatientId,
-  getEncounterById,
-  formatPatientName,
-  calculateAge,
-  MOCK_PREFILL_RESPONSE,
   type AuditEntry,
 } from '@/lib/mock-data'
 import { CostTable } from '@/components/gop/cost-table'
 import {
-  ArrowLeft, User, Shield, Stethoscope,
+  ArrowLeft, User, Stethoscope,
   DollarSign, CheckCircle, Clock, Sparkles, Activity, FileText, Pencil, RefreshCw, UserCog, UserPlus,
   AlertCircle, Info, Download, Printer,
 } from 'lucide-react'
@@ -370,10 +364,8 @@ export default function GOPDetailPage() {
 
   if (!req) notFound()
 
-  const patient      = getPatientById(req.patientId)
-  const coverage     = getCoverageByPatientId(req.patientId)
-  const encounter    = getEncounterById(req.encounterId)
-  const prefillAnswers = MOCK_PREFILL_RESPONSE[req.id] ?? []
+  const patient = { id: req.patientId, name: req.patientName, birthDate: '', gender: '' as const }
+  const prefillAnswers: { aiPrefilled: boolean; humanVerified: boolean; linkId: string; answer: string | boolean | number }[] = []
 
   const role             = useActiveRole()
   const userName         = session?.user?.name ?? ''
@@ -619,132 +611,103 @@ export default function GOPDetailPage() {
           </DetailCard>
 
           {/* Patient card */}
-          <DetailCard>
-            <CardSectionHeader
-              icon={<User style={{ width: 12, height: 12, color: 'var(--gray-400)' }} />}
-              title="Patient"
-            />
-            {patient ? (
+            <DetailCard>
+              <CardSectionHeader
+                icon={<User style={{ width: 12, height: 12, color: 'var(--gray-400)' }} />}
+                title="Patient"
+              />
               <>
-                <KVRow first label="Name" value={formatPatientName(patient)} />
-                <KVRow label="Age / Gender" value={`${calculateAge(patient.birthDate)} yrs · ${patient.gender}`} />
+                <KVRow first label="Name" value={req.patientName} />
                 <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border-light)' }}>
-                  <Link href={`/patients/${patient.id}`} style={{ fontSize: 12, color: 'var(--blue-600)', textDecoration: 'none' }}>
-                    View patient record →
-                  </Link>
+                  Patient ID: <span style={{ fontFamily: 'var(--font-mono)' }}>{req.patientId}</span>
                 </div>
               </>
-            ) : (
-              <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--gray-400)' }}>Patient data unavailable.</div>
-            )}
-          </DetailCard>
-
-          {/* Coverage card */}
-          {coverage && (
-            <DetailCard>
-              <CardSectionHeader
-                icon={<Shield style={{ width: 12, height: 12, color: 'var(--gray-400)' }} />}
-                title="Coverage"
-              />
-              <KVRow first label="Plan" value={coverage.planName} />
-              <KVRow label="Policy" value={coverage.policyNumber} mono />
-              <KVRow label="Member ID" value={coverage.membershipId} mono />
-              <KVRow label="Employer" value={req.employer || coverage.employer || '—'} />
-              <KVRow label="Co-Pay" value={`${coverage.coPayPercent}%`} />
             </DetailCard>
-          )}
 
-          {/* Encounter card */}
-          {encounter && (
-            <DetailCard>
-              <CardSectionHeader
-                icon={<Stethoscope style={{ width: 12, height: 12, color: 'var(--gray-400)' }} />}
-                title="Encounter"
-              />
-              <KVRow first label="Reason" value={encounter.reasonCode?.[0]?.text ?? '—'} />
-              <KVRow label="Provider" value={encounter.serviceProvider.display} />
-              <KVRow label="Class" value={`${encounter.class.display} · ${encounter.status}`} />
-              <KVRow label="Date" value={new Date(encounter.period.start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} />
+          {/* Doctors card */}
+          <DetailCard>
+            <CardSectionHeader
+              icon={<Stethoscope style={{ width: 12, height: 12, color: 'var(--gray-400)' }} />}
+              title="Doctors"
+            />
 
-              {/* Surgeon row */}
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '8px 16px', borderTop: '1px solid var(--border-light)',
-              }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>
-                    Surgeon
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: req.assignedSurgeon ? 'var(--gray-700)' : 'var(--gray-400)' }}>
-                    {req.assignedSurgeon ?? 'Unassigned'}
-                  </span>
+            {/* Surgeon row */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '8px 16px', borderTop: '1px solid var(--border-light)',
+            }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>
+                  Surgeon
                 </div>
-                {canReassign && (
+                <span style={{ fontSize: 13, fontWeight: 500, color: req.assignedSurgeon ? 'var(--gray-700)' : 'var(--gray-400)' }}>
+                  {req.assignedSurgeon ?? 'Unassigned'}
+                </span>
+              </div>
+              {canReassign && (
+                <button
+                  onClick={() => setReassignOpen(true)}
+                  title="Reassign surgeon"
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, color: 'var(--gray-400)', display: 'flex' }}
+                >
+                  <Pencil style={{ width: 12, height: 12 }} />
+                </button>
+              )}
+            </div>
+
+            {/* Anaesthetist row */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '8px 16px', borderTop: '1px solid var(--border-light)',
+            }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>
+                  Anaesthetist
+                </div>
+                {req.assignedAnaesthetist
+                  ? <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-700)' }}>{req.assignedAnaesthetist}</span>
+                  : <span style={{ fontSize: 12, color: '#C47B10', fontStyle: 'italic' }}>Not yet assigned</span>}
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {canReassign && req.assignedAnaesthetist && (
                   <button
                     onClick={() => setReassignOpen(true)}
-                    title="Reassign surgeon"
+                    title="Reassign anaesthetist"
                     style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, color: 'var(--gray-400)', display: 'flex' }}
                   >
                     <Pencil style={{ width: 12, height: 12 }} />
                   </button>
                 )}
+                {canAssignAna && (
+                  <button
+                    onClick={() => setAssignAnaOpen(true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '4px 10px', border: '1px solid var(--blue-200)',
+                      borderRadius: 'var(--radius-md)', background: 'var(--blue-50)',
+                      fontSize: 11, fontWeight: 500, color: 'var(--blue-700)', cursor: 'pointer',
+                    }}
+                  >
+                    <UserPlus style={{ width: 11, height: 11 }} />
+                    Assign
+                  </button>
+                )}
               </div>
+            </div>
 
-              {/* Anaesthetist row */}
+            {req.surgeonVerified && !req.assignedAnaesthetist && (
               <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '8px 16px', borderTop: '1px solid var(--border-light)',
+                margin: '0 12px 12px',
+                display: 'flex', alignItems: 'flex-start', gap: 8,
+                border: '1px solid #FDE68A', background: '#FFFBEB',
+                borderRadius: 'var(--radius-md)', padding: '8px 10px',
+                fontSize: 12, color: '#92400E',
               }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>
-                    Anaesthetist
-                  </div>
-                  {req.assignedAnaesthetist
-                    ? <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--gray-700)' }}>{req.assignedAnaesthetist}</span>
-                    : <span style={{ fontSize: 12, color: '#C47B10', fontStyle: 'italic' }}>Not yet assigned</span>}
-                </div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {canReassign && req.assignedAnaesthetist && (
-                    <button
-                      onClick={() => setReassignOpen(true)}
-                      title="Reassign anaesthetist"
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, color: 'var(--gray-400)', display: 'flex' }}
-                    >
-                      <Pencil style={{ width: 12, height: 12 }} />
-                    </button>
-                  )}
-                  {canAssignAna && (
-                    <button
-                      onClick={() => setAssignAnaOpen(true)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 4,
-                        padding: '4px 10px', border: '1px solid var(--blue-200)',
-                        borderRadius: 'var(--radius-md)', background: 'var(--blue-50)',
-                        fontSize: 11, fontWeight: 500, color: 'var(--blue-700)', cursor: 'pointer',
-                      }}
-                    >
-                      <UserPlus style={{ width: 11, height: 11 }} />
-                      Assign
-                    </button>
-                  )}
-                </div>
+                <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
+                <span>An anaesthetist must be assigned before the anaesthesia section can be completed.</span>
               </div>
-
-              {/* Warning: surgeon done but no anaesthetist */}
-              {req.surgeonVerified && !req.assignedAnaesthetist && (
-                <div style={{
-                  margin: '0 12px 12px',
-                  display: 'flex', alignItems: 'flex-start', gap: 8,
-                  border: '1px solid #FDE68A', background: '#FFFBEB',
-                  borderRadius: 'var(--radius-md)', padding: '8px 10px',
-                  fontSize: 12, color: '#92400E',
-                }}>
-                  <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
-                  <span>An anaesthetist must be assigned before anaesthetist verification can begin.</span>
-                </div>
-              )}
-            </DetailCard>
-          )}
+            )}
+          </DetailCard>
 
           {canReassign && (
             <ReassignDoctorModal
@@ -838,7 +801,7 @@ export default function GOPDetailPage() {
                       pricingUnit={req.pricingUnit}
                       marketingPackage={req.marketingPackage}
                       employer={req.employer}
-                      coPayPercent={coverage?.coPayPercent}
+                      coPayPercent={undefined}
                       showCategorySubtotals
                       editable={false}
                     />
@@ -962,3 +925,4 @@ export default function GOPDetailPage() {
     </div>
   )
 }
+

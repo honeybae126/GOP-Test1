@@ -9,6 +9,9 @@ import { getDraftSubStatus, DRAFT_SUB_STATUS_STYLES } from '@/lib/gop-utils'
 import { PriorityBadge } from '@/components/gop/priority-badge'
 import { useGopStore } from '@/lib/gop-store'
 import { getSLAStatus } from '@/lib/sla-utils'
+import React, { useState, useMemo } from 'react'
+import { Search } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { SLAIndicator } from '@/components/gop/sla-indicator'
 
 interface DoctorPatientListProps {
@@ -90,6 +93,7 @@ export function DoctorPatientList({
   coverages = [],
 }: DoctorPatientListProps) {
   const gopRequests = useGopStore((s) => s.requests)
+  const [cpiQuery, setCpiQuery] = useState('')
 
   const patientsWithEncounters = patients.map((patient) => {
     const encounter = encounters.find((enc) => enc.subject.reference === `Patient/${patient.id}`)
@@ -112,7 +116,17 @@ export function DoctorPatientList({
     return statusOrder[a.encounter.status] - statusOrder[b.encounter.status]
   })
 
-  if (patientsWithEncounters.length === 0) {
+  const filteredPatients = useMemo(() => {
+    if (!cpiQuery.trim()) return patientsWithEncounters
+    return patientsWithEncounters.filter(({ hospitalId }) =>
+      hospitalId.toLowerCase().includes(cpiQuery.trim().toLowerCase())
+    )
+  }, [patientsWithEncounters, cpiQuery])
+
+  const patientCount = filteredPatients.length
+
+  if (patientCount === 0) {
+    const message = cpiQuery.trim() ? 'No patients match this CPI.' : 'No current patients found.'
     return (
       <div
         className="rounded-2xl text-center py-16"
@@ -123,19 +137,43 @@ export function DoctorPatientList({
           fontSize: 13,
         }}
       >
-        No current patients found.
+        {message}
       </div>
     )
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-medium" style={{ color: '#6B7494' }}>
-        {patientsWithEncounters.length} patient{patientsWithEncounters.length !== 1 ? 's' : ''} on record
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium" style={{ color: '#6B7494' }}>
+          {patientCount} patient{patientCount !== 1 ? 's' : ''} {cpiQuery.trim() ? `matching CPI "${cpiQuery}"` : 'on record'}
+        </p>
+        {cpiQuery.trim() && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-3 text-xs"
+            onClick={() => setCpiQuery('')}
+          >
+            Clear CPI search
+          </Button>
+        )}
+      </div>
+
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2">
+          <Search className="size-3.5 text-muted-foreground" />
+        </div>
+        <Input
+          placeholder="Search by CPI (Hospital ID)..."
+          value={cpiQuery}
+          onChange={(e) => setCpiQuery(e.target.value)}
+          className="pl-10 h-8"
+        />
+      </div>
 
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-        {patientsWithEncounters.map(({ patient, encounter, coverage, existingGOP, hospitalId, isOverdue }) => {
+        {filteredPatients.map(({ patient, encounter, coverage, existingGOP, hospitalId, isOverdue, slaStatus }) => {
           const name = formatPatientName(patient)
           const age = calculateAge(patient.birthDate)
           const doctorDisplay = encounter.participant[0]?.individual.display ?? '—'

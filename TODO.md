@@ -1,10 +1,8 @@
-# Demo Role Switcher Fix - TODO
+# GOP Automation Project Run Fix
 
-## Plan Steps (4 total):
-- [x] Step 1: Create src/app/auth/role-select/page.tsx (new role picker page)
-- [x] Step 2: Edit src/hooks/useDemoRole.ts (fix switchRole & clearDemoRole with hard redirects)
-- [x] Step 3: Edit src/app/auth/signin/page.tsx (redirect to role-select after signin)
-- [x] Step 4: Edit middleware.ts (add role-select to public routes)
-- [ ] Step 5: Test verification (npm run dev + manual tests)
-
-**Current progress: Starting Step 1**
+## Steps:
+- [x] 1. Edit src/lib/env.ts to add preprocess fallbacks and optional Azure vars
+- [x] 2. Edit src/lib/auth.ts to conditional Azure provider and always enable demo auth
+- [x] 3. Run `npx prisma generate`
+- [x] 4. Restart dev server (`npm run dev`)
+- [x] 5. Test login with demo: staff@intercare.com / gop123

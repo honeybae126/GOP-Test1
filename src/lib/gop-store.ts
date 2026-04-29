@@ -6,6 +6,8 @@ import {
   type MockGOPRequest,
   type AuditEntry,
   type CostLineItem,
+  type SurgicalFormData,
+  type AnaesthesiaFormData,
 } from './mock-data'
 
 interface Performer {
@@ -33,8 +35,8 @@ interface CreateGOPInput {
 interface GOPState {
   requests:        MockGOPRequest[]
   gopQuoteCounter: number   // last-used sequential number for quote numbering
-  setSurgeonVerified:      (id: string, performer: Performer, regNumber?: string) => void
-  setAnaesthetistVerified: (id: string, performer: Performer, regNumber?: string) => void
+  setSurgeonVerified:      (id: string, performer: Performer, surgicalForm: SurgicalFormData, regNumber?: string) => void
+  setAnaesthetistVerified: (id: string, performer: Performer, anaesthesiaForm: AnaesthesiaFormData, regNumber?: string) => void
   setFinanceVerified:      (id: string, performer: Performer) => void
   setStaffFinalised:       (id: string, performer: Performer) => void
   submitToInsurer:         (id: string, performer: Performer) => void
@@ -78,19 +80,59 @@ function generateQuoteNumber(counter: number): string {
   return `EQ${year}-${counter}`
 }
 
+function makeLine(id: string, description: string, category: CostLineItem['category'], amount: number): CostLineItem {
+  return { id, department: '', category, code: '', description, unit: 1, unitPrice: amount, amount, discount: 0, netAmount: amount }
+}
+
+function surgicalLineItems(f: SurgicalFormData): CostLineItem[] {
+  const rows: Array<[string, string, CostLineItem['category'], number]> = [
+    ['sli-01', 'Surgeon Fee',            'SURGICAL_STAFF',        f.surgeonFee],
+    ['sli-02', 'Assistant Fee',          'SURGICAL_STAFF',        f.assistantFee],
+    ['sli-03', 'OT Procedure Fee',       'FACILITY_THEATRE',      f.otProcedureFee],
+    ['sli-04', 'Nursing Fee (OT)',       'FACILITY_THEATRE',      f.nursingFeeOT],
+    ['sli-05', 'IPD Room Charge',        'IPD_WARD',              f.ipdRoomCharge],
+    ['sli-06', 'IPD Nursing',            'IPD_WARD',              f.ipdNursing],
+    ['sli-07', 'IPD Doctor',             'IPD_WARD',              f.ipdDoctor],
+    ['sli-08', 'IPD Specialist Consult', 'IPD_WARD',              f.ipdSpecialistConsult],
+    ['sli-09', 'Histopathology',         'OTHER',                 f.histopathology],
+  ]
+  return rows.filter(([,,,amt]) => amt > 0).map(([id, desc, cat, amt]) => makeLine(id, desc, cat, amt))
+}
+
+function anaesthesiaLineItems(f: AnaesthesiaFormData): CostLineItem[] {
+  const rows: Array<[string, string, CostLineItem['category'], number]> = [
+    ['ali-01', 'Anaesthesiologist Fee', 'ANAESTHESIA',           f.anaesthesiologistFee],
+    ['ali-02', 'Anaesthesia Fee',       'ANAESTHESIA',           f.anaesthesiaFee],
+    ['ali-03', 'Drugs',                 'PHARMACY',              f.drugs],
+    ['ali-04', 'Consumables',           'EQUIPMENT_INSTRUMENTS', f.consumables],
+    ['ali-05', 'Others',                'OTHER',                 f.others],
+  ]
+  return rows.filter(([,,,amt]) => amt > 0).map(([id, desc, cat, amt]) => makeLine(id, desc, cat, amt))
+}
+
 export const useGopStore = create<GOPState>()(
   persist(
     (set, get) => ({
       requests:        [],
       gopQuoteCounter: 9,
 
-      setSurgeonVerified: (id, performer, regNumber?: string) =>
+      setSurgeonVerified: (id, performer, surgicalForm, regNumber?: string) =>
         set((s) => ({
           requests: s.requests.map((r) => {
             if (r.id !== id) return r
-            const now     = new Date().toISOString()
-            const updated = {
+            const now      = new Date().toISOString()
+            const sItems   = surgicalLineItems(surgicalForm)
+            // Keep any existing anaesthesia-side items, replace surgical-side
+            const anaItems = (r.lineItems ?? []).filter(i =>
+              i.category === 'ANAESTHESIA' || i.id.startsWith('ali-')
+            )
+            const newItems = [...sItems, ...anaItems]
+            const total    = +newItems.reduce((sum, i) => sum + i.netAmount, 0).toFixed(2)
+            const updated  = {
               ...r,
+              surgicalForm,
+              lineItems: newItems,
+              estimatedAmount: total,
               surgeonVerified: true,
               surgeonVerifiedAt: now,
               surgeonRegistrationNumber: regNumber ?? r.surgeonRegistrationNumber ?? null,
@@ -100,13 +142,21 @@ export const useGopStore = create<GOPState>()(
           }),
         })),
 
-      setAnaesthetistVerified: (id, performer, regNumber?: string) =>
+      setAnaesthetistVerified: (id, performer, anaesthesiaForm, regNumber?: string) =>
         set((s) => ({
           requests: s.requests.map((r) => {
             if (r.id !== id) return r
-            const now     = new Date().toISOString()
-            const updated = {
+            const now      = new Date().toISOString()
+            const aItems   = anaesthesiaLineItems(anaesthesiaForm)
+            // Keep surgeon-side items, replace anaesthesia-side
+            const sItems   = (r.lineItems ?? []).filter(i => i.id.startsWith('sli-'))
+            const newItems = [...sItems, ...aItems]
+            const total    = +newItems.reduce((sum, i) => sum + i.netAmount, 0).toFixed(2)
+            const updated  = {
               ...r,
+              anaesthesiaForm,
+              lineItems: newItems,
+              estimatedAmount: total,
               anaesthetistVerified: true,
               anaesthetistVerifiedAt: now,
               anaesthetistRegistrationNumber: regNumber ?? r.anaesthetistRegistrationNumber ?? null,

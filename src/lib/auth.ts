@@ -12,10 +12,10 @@ const DEMO_USERS: Record<string, { name: string; role: string }> = {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
-    {
+    ...(process.env.AZURE_AD_TENANT_ID ? [{
       id: 'microsoft-entra-id',
       name: 'Microsoft',
-      type: 'oidc',
+      type: 'oidc' as const,
       issuer: `https://login.microsoftonline.com/${process.env.AZURE_AD_TENANT_ID}/v2.0`,
       clientId:     process.env.AZURE_AD_CLIENT_ID!,
       clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
@@ -37,24 +37,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           roles: profile.roles ?? [],
         }
       },
-    },
-    ...(process.env.DEMO_AUTH_ENABLED === 'true' ? [
-      Credentials({
-        name: 'Demo Credentials',
-        credentials: {
-          email:    { label: 'Email',    type: 'email'    },
-          password: { label: 'Password', type: 'password' },
-        },
-        async authorize(credentials) {
-          const email    = credentials?.email as string
-          const password = credentials?.password as string
-          if (password !== 'gop123') return null
-          const user = DEMO_USERS[email]
-          if (!user) return null
-          return { id: email, email, name: user.name, role: user.role }
-        },
-      })
-    ] : []),
+    }] : []),
+    Credentials({
+      name: 'Demo Credentials',
+      credentials: {
+        email:    { label: 'Email',    type: 'email'    },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        const email    = credentials?.email as string
+        const password = credentials?.password as string
+        if (password !== 'gop123') return null
+        const user = DEMO_USERS[email]
+        if (!user) return null
+        return { id: email, email, name: user.name, role: user.role }
+      },
+    }),
   ],
 
   callbacks: {
@@ -84,4 +82,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 
   session: { strategy: 'jwt' },
+  secret: process.env.AUTH_SECRET ?? 'gop-automation-demo-secret-do-not-use-in-prod!!',
 })

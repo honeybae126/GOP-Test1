@@ -52,23 +52,9 @@ export async function createTask(task: any) {
   return response.json()
 }
 
-// Mock data for dev without FHIR server
-export const MOCK_PATIENTS = [
-  {
-    resourceType: 'Patient',
-    id: 'patient-1',
-    name: [{ family: 'Doe', given: ['John'] }],
-    identifier: [{ system: 'hospital.local/id', value: 'P001' }],
-    telecom: [{ system: 'email', value: 'john@example.com' }]
-  },
-  {
-    resourceType: 'Patient',
-    id: 'patient-2',
-    name: [{ family: 'Smith', given: ['Jane'] }],
-    identifier: [{ system: 'hospital.local/id', value: 'P002' }],
-    telecom: [{ system: 'phone', value: '+1234567890' }]
-  }
-]
+// Mock data for dev without FHIR server (empty - use real FHIR)
+export const MOCK_PATIENTS: FHIRPatient[] = []
+console.warn('Using empty MOCK_PATIENTS. Connect real FHIR server for patient data.')
 
 export const MOCK_APRIL_QUESTIONNAIRE = {
   resourceType: 'Questionnaire',

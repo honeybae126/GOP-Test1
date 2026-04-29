@@ -7,7 +7,7 @@ import { useActiveRole } from '@/hooks/useActiveRole'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import type { MockEncounter, MockCostEstimate, GOPPriority } from '@/lib/mock-data'
+import type { GOPPriority } from '@/lib/mock-data'
 import { MOCK_QUESTIONNAIRES } from '@/lib/mock-data'
 import { useGopStore } from '@/lib/gop-store'
 import { Search, Shield, ChevronRight, ChevronLeft, CheckCircle, Sparkles, FileText, AlertTriangle, Check } from 'lucide-react'
@@ -48,17 +48,14 @@ const C = {
 
 const STEPS = [
   { id: 1, label: 'Patient',      icon: 'fas fa-user' },
-  { id: 2, label: 'Encounter',    icon: 'fas fa-stethoscope' },
-  { id: 3, label: 'Insurer Form', icon: 'fas fa-file-medical' },
-  { id: 4, label: 'Review',       icon: 'fas fa-check-double' },
+  { id: 2, label: 'Insurer Form', icon: 'fas fa-file-medical' },
+  { id: 3, label: 'Review',       icon: 'fas fa-check-double' },
 ]
 
 type HisPatientResult = { patientId: string; fullName: string; dob: string; nric: string }
 type HisCoverage      = { insurer: string; policyNumber: string; memberId: string }
 
 interface NewGOPWizardProps {
-  encounters: MockEncounter[]
-  estimates:  MockCostEstimate[]
   preselectedPatientId?: string
 }
 
@@ -125,10 +122,9 @@ function InsurerBadge({ insurer }: { insurer: string }) {
 }
 
 /* ─── Main wizard ─────────────────────────────────────────────────────────── */
-export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: NewGOPWizardProps) {
+export function NewGOPWizard({ preselectedPatientId }: NewGOPWizardProps) {
   const [step, setStep]                       = useState(preselectedPatientId ? 2 : 1)
   const [selectedPatientId, setSelectedPatientId] = useState(preselectedPatientId ?? '')
-  const [selectedEncounterId, setSelectedEncounterId] = useState('')
   const [selectedFormId, setSelectedFormId]   = useState('')
   const [search, setSearch]                   = useState('')
   const [priority, setPriority]               = useState<GOPPriority>('ROUTINE')
@@ -183,18 +179,13 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
     finally { setCoverageLoading(false) }
   }
 
-  const patientEncounters = Array.isArray(encounters) ? encounters.filter(e => e.subject.reference === `Patient/${selectedPatientId}`) : []
-  const selectedEncounter = Array.isArray(encounters) ? encounters.find(e => e.id === selectedEncounterId) : undefined
-  const selectedEstimate  = Array.isArray(estimates)  ? (estimates.find(e => e.encounterId === selectedEncounterId) ?? null) : null
-  const selectedForm      = (MOCK_QUESTIONNAIRES || []).find(q => q.id === selectedFormId) ?? null
-
-  const coverageExpired   = false // HIS coverage is live; assume active when present
+  const selectedForm = (MOCK_QUESTIONNAIRES || []).find(q => q.id === selectedFormId) ?? null
+  const coverageExpired = false
 
   const canContinue =
     (step === 1 && !!selectedPatientId && !!selectedCoverage && !coverageLoading) ||
-    (step === 2 && !!selectedEncounterId) ||
-    (step === 3 && !!selectedFormId) ||
-    step === 4
+    (step === 2 && !!selectedFormId) ||
+    step === 3
 
   /* ── Success screen ─────────────────────────────────────────────────────── */
   if (createdGopId) {
@@ -212,9 +203,8 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
           GOP Request Created
         </h2>
         <p style={{ fontSize: 'var(--font-size-sm)', color: C.muted, lineHeight: 1.6, marginBottom: 28 }}>
-          The request has been created with AI-assisted prefill.
-          {' '}<strong style={{ color: C.fg }}>{selectedEncounter?.participant[0]?.individual.display}</strong>{' '}
-          will need to review and verify clinical fields before submission.
+          The request has been created. The assigned surgeon and anaesthetist will need to
+          fill in their sections before the request can be submitted to the insurer.
         </p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
           <Link href="/gop">
@@ -415,101 +405,8 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
         </WizardCard>
       )}
 
-      {/* ── Step 2: Encounter ─────────────────────────────────────────────── */}
+      {/* ── Step 2: Insurer form ──────────────────────────────────────────── */}
       {step === 2 && (
-        <WizardCard>
-          <CardSection
-            label="Select Encounter"
-            sub={selectedHisPatient ? `Choose an encounter for ${selectedHisPatient.fullName}` : 'Choose the clinical encounter for this GOP request.'}
-          />
-          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {patientEncounters.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 'var(--font-size-sm)', color: C.muted }}>
-                <i className="fas fa-stethoscope" style={{ fontSize: 28, display: 'block', marginBottom: 12, opacity: 0.3 }} />
-                No encounters found for this patient.
-              </div>
-            ) : patientEncounters.map(enc => {
-              const est        = estimates.find(e => e.encounterId === enc.id)
-              const isSelected = enc.id === selectedEncounterId
-              const isEmergency = enc.class.code === 'EMER'
-
-              return (
-                <div
-                  key={enc.id}
-                  onClick={() => setSelectedEncounterId(enc.id)}
-                  style={{
-                    padding: '16px 18px', borderRadius: C.radMd, cursor: 'pointer',
-                    border: `1.5px solid ${isSelected ? C.primary : C.border}`,
-                    background: isSelected ? C.primarySub : C.bgCard,
-                    transition: C.transition, position: 'relative',
-                  }}
-                  onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = C.gray50 }}
-                  onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = C.bgCard }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                    {/* Left */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: C.radSm, flexShrink: 0,
-                          background: isEmergency ? '#FEF2F2' : 'var(--blue-50)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                          <i className="fas fa-stethoscope" style={{ fontSize: 12, color: isEmergency ? 'var(--destructive)' : C.primary }} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: C.fg, lineHeight: 1.3 }}>
-                            {enc.reasonCode?.[0]?.text}
-                          </div>
-                          <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>
-                            {enc.serviceProvider.display}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: C.muted, paddingLeft: 40 }}>
-                        <i className="fas fa-user-md" style={{ fontSize: 10 }} />
-                        <span>{enc.participant[0]?.individual.display}</span>
-                      </div>
-                    </div>
-
-                    {/* Right */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: C.radFull,
-                        background: isEmergency ? '#FEF2F2' : C.gray100,
-                        color: isEmergency ? 'var(--destructive)' : C.gray500,
-                        border: `1px solid ${isEmergency ? '#FECACA' : C.border}`,
-                      }}>
-                        {enc.class.display}
-                      </span>
-                      {est && (
-                        <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 700, color: C.fg, fontVariantNumeric: 'tabular-nums' }}>
-                          ${est.total.toLocaleString()}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {isSelected && (
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      marginTop: 10, paddingTop: 10,
-                      borderTop: `1px solid ${C.border}`,
-                      fontSize: 11, fontWeight: 600, color: C.primary,
-                    }}>
-                      <Check style={{ width: 12, height: 12 }} />
-                      Selected
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </WizardCard>
-      )}
-
-      {/* ── Step 3: Insurer form ──────────────────────────────────────────── */}
-      {step === 3 && (
         <WizardCard>
           <CardSection
             label="Select Insurer Form"
@@ -611,8 +508,8 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
         </WizardCard>
       )}
 
-      {/* ── Step 4: Review ────────────────────────────────────────────────── */}
-      {step === 4 && (
+      {/* ── Step 3: Review ────────────────────────────────────────────────── */}
+      {step === 3 && (
         <WizardCard>
           <CardSection
             label="Review & Create"
@@ -623,12 +520,9 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
             {/* Summary table */}
             <div style={{ background: C.gray50, borderRadius: C.radMd, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
               {[
-                { label: 'Patient',        value: selectedHisPatient?.fullName ?? '—', icon: 'fas fa-user' },
-                { label: 'Coverage',       value: selectedCoverage ? `${selectedCoverage.insurer} — ${selectedCoverage.policyNumber}` : '—', icon: 'fas fa-shield-alt' },
-                { label: 'Encounter',      value: selectedEncounter?.reasonCode?.[0]?.text ?? '—', icon: 'fas fa-stethoscope' },
-                { label: 'Doctor',         value: selectedEncounter?.participant[0]?.individual.display ?? '—', icon: 'fas fa-user-md' },
-                { label: 'Estimated Cost', value: selectedEstimate ? `$${selectedEstimate.total.toLocaleString()} USD` : '—', icon: 'fas fa-dollar-sign' },
-                { label: 'Insurer Form',   value: selectedForm?.title ?? '—', icon: 'fas fa-file-medical' },
+                { label: 'Patient',      value: selectedHisPatient?.fullName ?? '—', icon: 'fas fa-user' },
+                { label: 'Coverage',     value: selectedCoverage ? `${selectedCoverage.insurer} — ${selectedCoverage.policyNumber}` : '—', icon: 'fas fa-shield-alt' },
+                { label: 'Insurer Form', value: selectedForm?.title ?? '—', icon: 'fas fa-file-medical' },
               ].map((item, i) => (
                 <div key={item.label} style={{
                   display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
@@ -701,10 +595,10 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { icon: 'fas fa-robot',       color: 'var(--ai-color)',  bg: 'var(--ai-bg)',    text: 'AI reads FHIR records and prefills the physician section automatically.' },
-                  { icon: 'fas fa-stethoscope', color: C.success,          bg: C.successSub,      text: 'Assigned surgeon reviews and verifies clinical fields, then signs.' },
-                  { icon: 'fas fa-user-md',     color: C.primary,          bg: C.primarySub,      text: 'Assigned anaesthetist verifies the anaesthetic plan and signs.' },
-                  { icon: 'fas fa-dollar-sign', color: C.warning,          bg: 'var(--warning-subtle)', text: 'Finance reviews the cost estimate and confirms the figures.' },
+                  { icon: 'fas fa-stethoscope', color: C.success,          bg: C.successSub,      text: 'Assigned surgeon fills in surgical details and proposed costs, then signs.' },
+                  { icon: 'fas fa-user-md',     color: C.primary,          bg: C.primarySub,      text: 'Assigned anaesthetist fills in anaesthesia details and proposed costs, then signs.' },
+                  { icon: 'fas fa-calculator',  color: C.warning,          bg: 'var(--warning-subtle)', text: 'Cost is automatically calculated from both sections.' },
+                  { icon: 'fas fa-dollar-sign', color: C.warning,          bg: 'var(--warning-subtle)', text: 'Finance reviews the combined cost estimate and confirms figures.' },
                   { icon: 'fas fa-paper-plane', color: 'var(--accent)',     bg: '#EEF2FF',         text: 'Insurance Staff finalises and submits the GOP to the insurer.' },
                 ].map((wStep, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
@@ -728,7 +622,6 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
               </div>
             </div>
 
-            {/* AI notice */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '12px 16px', borderRadius: C.radMd,
@@ -736,7 +629,7 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
             }}>
               <Sparkles style={{ width: 14, height: 14, color: C.aiColor, flexShrink: 0 }} />
               <span style={{ fontSize: 12, color: C.aiColor, lineHeight: 1.5 }}>
-                AI will prefill the physician section using FHIR records. The assigned doctor must verify before submission.
+                Costs will be auto-calculated once both the surgeon and anaesthetist have completed their sections.
               </span>
             </div>
           </div>
@@ -771,7 +664,7 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
             Back
           </Button>
 
-          {step < 4 ? (
+          {step < 3 ? (
             <Button
               onClick={() => setStep(s => s + 1)}
               disabled={!canContinue}
@@ -786,12 +679,12 @@ export function NewGOPWizard({ encounters, estimates, preselectedPatientId }: Ne
                 const newId = createGOPRequest({
                   patientId:       selectedPatientId,
                   patientName:     selectedHisPatient?.fullName ?? '',
-                  encounterId:     selectedEncounterId,
+                  encounterId:     '',
                   coverageId:      selectedCoverage?.policyNumber ?? '',
                   insurer:         selectedCoverage?.insurer ?? '',
                   questionnaireId: selectedFormId,
-                  assignedSurgeon: selectedEncounter?.participant[0]?.individual.display ?? null,
-                  estimatedAmount: selectedEstimate?.total ?? 0,
+                  assignedSurgeon: null,
+                  estimatedAmount: 0,
                   createdBy:       session?.user?.name ?? 'Insurance Staff',
                   createdByRole:   activeRole || 'INSURANCE_STAFF',
                   priority,

@@ -30,6 +30,7 @@ export function DoctorPatientSearch({
   gopRequests,
 }: DoctorPatientSearchProps) {
   const [nameQuery, setNameQuery] = useState('')
+  const [cpiQuery, setCpiQuery] = useState('')
   const [wardFilter, setWardFilter] = useState(ALL_VALUE)
   const [physicianFilter, setPhysicianFilter] = useState(ALL_VALUE)
   const [admissionFrom, setAdmissionFrom] = useState('')
@@ -85,12 +86,16 @@ export function DoctorPatientSearch({
 
   // Apply filters - safe
   const filtered = useMemo(() => {
-    return rows.filter(({ patient, encounter, coverage }) => {
+    return rows.filter(({ patient, encounter, coverage, hospitalId }) => {
       if (!encounter) return false
       // Name search
       if (nameQuery.trim()) {
         const full = formatPatientName(patient).toLowerCase()
         if (!full.includes(nameQuery.trim().toLowerCase())) return false
+      }
+      // CPI search
+      if (cpiQuery.trim()) {
+        if (!hospitalId.toLowerCase().includes(cpiQuery.trim().toLowerCase())) return false
       }
       // Ward filter
       if (wardFilter !== ALL_VALUE && encounter.serviceProvider.display !== wardFilter) return false
@@ -108,10 +113,11 @@ export function DoctorPatientSearch({
       }
       return true
     })
-  }, [rows, nameQuery, wardFilter, physicianFilter, admissionFrom, admissionTo])
+  }, [rows, nameQuery, cpiQuery, wardFilter, physicianFilter, admissionFrom, admissionTo])
 
   const hasFilters =
     nameQuery.trim() ||
+    cpiQuery.trim() ||
     wardFilter !== ALL_VALUE ||
     physicianFilter !== ALL_VALUE ||
     admissionFrom ||
@@ -119,6 +125,7 @@ export function DoctorPatientSearch({
 
   function clearFilters() {
     setNameQuery('')
+    setCpiQuery('')
     setWardFilter(ALL_VALUE)
     setPhysicianFilter(ALL_VALUE)
     setAdmissionFrom('')
@@ -156,6 +163,20 @@ export function DoctorPatientSearch({
                   placeholder="Search by name…"
                   value={nameQuery}
                   onChange={(e) => setNameQuery(e.target.value)}
+                  className="pl-8 h-8 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* CPI search */}
+            <div className="space-y-1.5 lg:col-span-1">
+              <Label className="text-xs">Hospital ID (CPI)</Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search by CPI…"
+                  value={cpiQuery}
+                  onChange={(e) => setCpiQuery(e.target.value)}
                   className="pl-8 h-8 text-sm"
                 />
               </div>

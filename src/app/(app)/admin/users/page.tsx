@@ -1,13 +1,6 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-
-const MOCK_USERS = [
-  { id: '1', name: 'Dr. Sok Phearith',       email: 'sok.phearith@intercare.kh',     role: 'DOCTOR',          status: 'Active' },
-  { id: '2', name: 'Chan Reaksmey',           email: 'chan.reaksmey@intercare.kh',    role: 'INSURANCE_STAFF', status: 'Active' },
-  { id: '3', name: 'Dr. Roeun Chanveasna',    email: 'roeun.chanveasna@intercare.kh', role: 'DOCTOR',          status: 'Active' },
-  { id: '4', name: 'Lim Pagna',               email: 'lim.pagna@intercare.kh',        role: 'FINANCE',         status: 'Active' },
-  { id: '5', name: 'Admin User',              email: 'admin@intercare.kh',            role: 'IT_ADMIN',        status: 'Active' },
-]
+import { prisma } from '@/lib/prisma'
 
 const ROLE_BADGE: Record<string, { cls: string; icon: string; label: string }> = {
   DOCTOR:          { cls: 'badge badge-approved',  icon: 'fas fa-user-md',    label: 'Doctor' },
@@ -19,6 +12,8 @@ const ROLE_BADGE: Record<string, { cls: string; icon: string; label: string }> =
 export default async function AdminUsersPage() {
   const session = await auth()
   if (!session?.user || session.user.role !== 'IT_ADMIN') redirect('/')
+
+  const users = await prisma.userMetadata.findMany({ orderBy: { createdAt: 'desc' } })
 
   return (
     <div className="page-container">
@@ -57,7 +52,7 @@ export default async function AdminUsersPage() {
               <i className="fas fa-users" style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem' }} />
               <span className="card-header-title">System Users</span>
             </div>
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)' }}>{MOCK_USERS.length} users</span>
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--muted-foreground)' }}>{users.length} users</span>
           </div>
           <table className="data-table">
             <thead>
